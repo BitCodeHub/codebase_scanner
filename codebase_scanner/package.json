@@ -1,0 +1,19 @@
+{
+  "name": "codebase-scanner",
+  "version": "1.0.0",
+  "description": "Production-grade security scanner for codebases",
+  "workspaces": ["frontend", "backend"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && uvicorn app.main:app --reload",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && pytest"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

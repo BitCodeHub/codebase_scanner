@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Frontend</title>
+</head>
+<body>
+    <h1>Frontend Debug</h1>
+    <div id="status"></div>
+    <div id="errors"></div>
+    
+    <script>
+        const status = document.getElementById('status');
+        const errors = document.getElementById('errors');
+        
+        async function checkFrontend() {
+            try {
+                // Check if main page loads
+                const mainResp = await fetch('http://localhost:5173');
+                status.innerHTML += `<p>Main page: ${mainResp.status} ${mainResp.statusText}</p>`;
+                
+                // Check if main.jsx loads
+                const mainJsResp = await fetch('http://localhost:5173/src/main.jsx');
+                status.innerHTML += `<p>main.jsx: ${mainJsResp.status} ${mainJsResp.statusText}</p>`;
+                
+                // Check if App.jsx loads
+                const appResp = await fetch('http://localhost:5173/src/App.jsx');
+                status.innerHTML += `<p>App.jsx: ${appResp.status} ${appResp.statusText}</p>`;
+                
+                // Try to load the actual app
+                const iframe = document.createElement('iframe');
+                iframe.src = 'http://localhost:5173';
+                iframe.style.width = '100%';
+                iframe.style.height = '600px';
+                iframe.style.border = '1px solid #ccc';
+                document.body.appendChild(iframe);
+                
+            } catch (error) {
+                errors.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        checkFrontend();
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "vulnerable-test-app",
+  "version": "1.0.0",
+  "description": "Test app with vulnerable dependencies",
+  "main": "index.js",
+  "dependencies": {
+    "express": "4.17.0",
+    "lodash": "4.17.15",
+    "jquery": "3.4.1"
+  },
+  "devDependencies": {
+    "jest": "^26.0.0"
+  }
+}

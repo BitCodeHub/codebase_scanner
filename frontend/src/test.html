@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test</title>
+</head>
+<body>
+    <h1>Test Page</h1>
+    <script>
+        fetch('http://localhost:5173/src/main.jsx')
+            .then(r => r.text())
+            .then(t => console.log('main.jsx loaded:', t.length))
+            .catch(e => console.error('Error:', e));
+            
+        fetch('http://localhost:5173/src/App.jsx')  
+            .then(r => r.text())
+            .then(t => console.log('App.jsx loaded:', t.length))
+            .catch(e => console.error('Error:', e));
+    </script>
+</body>
+</html>

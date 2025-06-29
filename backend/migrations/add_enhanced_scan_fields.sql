@@ -1,0 +1,16 @@
+-- Add new columns to scan_results table for enhanced security information
+ALTER TABLE scan_results 
+ADD COLUMN IF NOT EXISTS remediation_example TEXT,
+ADD COLUMN IF NOT EXISTS cvss_score FLOAT,
+ADD COLUMN IF NOT EXISTS cvss_vector VARCHAR(255),
+ADD COLUMN IF NOT EXISTS risk_rating VARCHAR(50),
+ADD COLUMN IF NOT EXISTS exploitability TEXT,
+ADD COLUMN IF NOT EXISTS impact TEXT,
+ADD COLUMN IF NOT EXISTS likelihood VARCHAR(50),
+ADD COLUMN IF NOT EXISTS owasp_category VARCHAR(255),
+ADD COLUMN IF NOT EXISTS compliance_mappings JSONB DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS fix_effort VARCHAR(50),
+ADD COLUMN IF NOT EXISTS fix_priority INTEGER,
+ADD COLUMN IF NOT EXISTS code_context JSONB,
+ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]',
+ADD COLUMN IF NOT EXISTS confidence VARCHAR(50) DEFAULT 'medium';
