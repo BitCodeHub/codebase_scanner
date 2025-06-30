@@ -82,12 +82,17 @@ async def test_supabase():
         from supabase import create_client
         
         url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_KEY")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
         
         if not url or not key:
-            raise HTTPException(
-                status_code=500, 
-                detail="Supabase credentials not configured"
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": "not_configured",
+                    "message": "Supabase credentials not configured. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.",
+                    "supabase_url": "Not set",
+                    "supabase_key": "Not set"
+                }
             )
         
         # Test connection

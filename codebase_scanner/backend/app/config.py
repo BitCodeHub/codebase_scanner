@@ -13,14 +13,14 @@ class Settings(BaseSettings):
     debug: bool = Field(default=True, env="DEBUG")
     
     # Security
-    secret_key: str = Field(env="SECRET_KEY")
+    secret_key: str = Field(default="temporary-secret-key-replace-in-production", env="SECRET_KEY")
     algorithm: str = Field(default="HS256", env="ALGORITHM")
     access_token_expire_minutes: int = Field(default=30, env="ACCESS_TOKEN_EXPIRE_MINUTES")
     
-    # Supabase Configuration
-    supabase_url: str = Field(env="SUPABASE_URL")
-    supabase_anon_key: str = Field(env="SUPABASE_ANON_KEY")
-    supabase_service_key: str = Field(env="SUPABASE_SERVICE_KEY")
+    # Supabase Configuration - Optional for initial deployment
+    supabase_url: Optional[str] = Field(default=None, env="SUPABASE_URL")
+    supabase_anon_key: Optional[str] = Field(default=None, env="SUPABASE_ANON_KEY")
+    supabase_service_key: Optional[str] = Field(default=None, env="SUPABASE_SERVICE_KEY")
     
     # Redis for background tasks
     redis_url: str = Field(default="redis://localhost:6379", env="REDIS_URL")
@@ -50,10 +50,6 @@ class Settings(BaseSettings):
         
         # Ensure upload directory exists
         os.makedirs(self.upload_dir, exist_ok=True)
-        
-        # Validate required Supabase settings
-        if not self.supabase_url or not self.supabase_service_key:
-            raise ValueError("Supabase URL and Service Key are required")
 
 # Global settings instance
 settings = Settings()
