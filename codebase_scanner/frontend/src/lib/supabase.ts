@@ -74,7 +74,11 @@ export const supabase = shouldUseRealClient
   },
   from: () => createMockQueryBuilder(),
   channel: () => ({
-    on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) })
+    on: (type: string, filter: any, callback?: any) => ({
+      subscribe: () => ({
+        unsubscribe: () => {}
+      })
+    })
   }),
   storage: {
     from: () => ({
