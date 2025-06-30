@@ -28,7 +28,6 @@ services:
           name: codebase-scanner-db
           property: connectionString
     autoDeploy: true
-    plan: free
 
   # Frontend Static Site
   - type: web
@@ -63,12 +62,10 @@ services:
         source: /*
         destination: /index.html
     autoDeploy: true
-    plan: free
 
   # Redis for caching and Celery
   - type: redis
     name: codebase-scanner-redis
-    plan: free
     maxmemoryPolicy: allkeys-lru
     ipAllowList: [] # Allow connections from Render services
 
@@ -97,10 +94,8 @@ services:
           name: codebase-scanner-db
           property: connectionString
     autoDeploy: true
-    plan: free
 
 databases:
   - name: codebase-scanner-db
-    plan: free
     databaseName: codebase_scanner
     user: codebase_scanner
