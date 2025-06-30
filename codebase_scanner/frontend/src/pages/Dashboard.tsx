@@ -208,7 +208,7 @@ export default function Dashboard() {
       
     } catch (error) {
       console.error('Error starting scan:', error)
-      alert(`Failed to start scan: ${error.message}`)
+      alert(`Failed to start scan: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

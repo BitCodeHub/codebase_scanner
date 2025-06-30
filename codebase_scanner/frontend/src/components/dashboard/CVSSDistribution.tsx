@@ -88,7 +88,7 @@ export function CVSSDistribution({ results }: CVSSDistributionProps) {
               <Tooltip />
               <Bar 
                 dataKey="count" 
-                fill={(entry: any) => getBarColor(entry.severity)}
+                fill="#8b5cf6"
                 shape={(props: any) => {
                   const { x, y, width, height, payload } = props;
                   return (
