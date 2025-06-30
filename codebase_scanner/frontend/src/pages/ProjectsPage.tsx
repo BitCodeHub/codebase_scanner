@@ -53,7 +53,7 @@ export default function ProjectsPage() {
       if (error) throw error
 
       // Process projects to add scan statistics
-      const processedProjects = data.map(project => ({
+      const processedProjects = data.map((project: any) => ({
         ...project,
         scan_count: project.scans?.length || 0,
         last_scan: project.scans?.[0] || null
