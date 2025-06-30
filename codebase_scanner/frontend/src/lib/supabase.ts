@@ -1,141 +1,25 @@
-import { createClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../types/database'
-import { runtimeConfig } from '../generated/config'
+import { initializeSupabase, mockSupabase } from './supabase-client'
 
-// Use generated config which has build-time environment variables
-const supabaseUrl = runtimeConfig.supabaseUrl || import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = runtimeConfig.supabaseAnonKey || import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+// Lazy initialization
+let _supabaseClient: SupabaseClient<Database> | null | undefined;
 
-// Debug: Log all config sources
-console.log('Config Debug:', {
-  runtimeConfigUrl: runtimeConfig.supabaseUrl,
-  runtimeConfigKey: runtimeConfig.supabaseAnonKey,
-  envUrl: import.meta.env.VITE_SUPABASE_URL,
-  envKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-  finalUrl: supabaseUrl,
-  finalKey: supabaseAnonKey
-})
-
-// Only throw error in production if variables are missing
-if (import.meta.env.PROD && (!supabaseUrl || !supabaseAnonKey)) {
-  console.error('Missing Supabase environment variables in production')
+// Get or create the Supabase client
+function getSupabaseClient() {
+  if (_supabaseClient === undefined) {
+    _supabaseClient = initializeSupabase();
+  }
+  return _supabaseClient || mockSupabase;
 }
 
-// Log configuration status
-console.log('Supabase Configuration:', {
-  url: supabaseUrl ? 'Set' : 'Missing',
-  key: supabaseAnonKey ? 'Set' : 'Missing',
-  urlValue: supabaseUrl?.substring(0, 30) + '...',
-  keyValue: supabaseAnonKey?.substring(0, 20) + '...',
-  isProd: import.meta.env.PROD,
-  mode: import.meta.env.MODE,
-  runtimeConfig: runtimeConfig
-})
-
-// Create a mock query builder that returns proper chainable methods
-const createMockQueryBuilder = () => {
-  const mockResult = { data: [], error: null, count: 0 };
-  const builder: any = {
-    select: () => builder,
-    insert: () => builder,
-    update: () => builder,
-    upsert: () => builder,
-    delete: () => builder,
-    eq: () => builder,
-    neq: () => builder,
-    gt: () => builder,
-    lt: () => builder,
-    gte: () => builder,
-    lte: () => builder,
-    like: () => builder,
-    ilike: () => builder,
-    is: () => builder,
-    in: () => builder,
-    order: () => builder,
-    limit: () => builder,
-    range: () => builder,
-    single: () => Promise.resolve({ data: null, error: null }),
-    maybeSingle: () => Promise.resolve({ data: null, error: null }),
-    then: (resolve: any) => resolve(mockResult),
-    error: null
-  };
-  return builder;
-};
-
-// Validate configuration - must have valid URL and key
-const isValidUrl = supabaseUrl && supabaseUrl.length > 0 && supabaseUrl.startsWith('https://');
-const isValidKey = supabaseAnonKey && supabaseAnonKey.length > 0;
-const shouldUseRealClient = isValidUrl && isValidKey;
-
-console.log('Using real Supabase client:', shouldUseRealClient, {
-  isValidUrl,
-  isValidKey,
-  urlLength: supabaseUrl?.length,
-  keyLength: supabaseAnonKey?.length
+// Export a proxy that initializes on first use
+export const supabase = new Proxy({} as any, {
+  get(target, prop) {
+    const client = getSupabaseClient();
+    return client[prop as keyof typeof client];
+  }
 });
-
-// Initialize Supabase client with error handling
-let supabaseClient: any;
-
-if (shouldUseRealClient) {
-  try {
-    // Ensure values are valid strings
-    const url = String(supabaseUrl).trim();
-    const key = String(supabaseAnonKey).trim();
-    
-    // Final validation before creating client
-    if (!url || !key || url === 'undefined' || key === 'undefined' || url === '' || key === '') {
-      console.error('Invalid Supabase credentials:', { url, key });
-      throw new Error('Invalid Supabase credentials');
-    }
-    
-    console.log('Creating Supabase client with:', {
-      url: url.substring(0, 30) + '...',
-      keyLength: key.length,
-      urlType: typeof url,
-      keyType: typeof key
-    });
-    
-    supabaseClient = createClient<Database>(url, key, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true
-      }
-    });
-  } catch (error) {
-    console.error('Failed to create Supabase client:', error);
-    // Fall back to mock client
-    supabaseClient = null;
-  }
-}
-
-export const supabase = supabaseClient || {
-  auth: {
-    signUp: async () => ({ data: null, error: new Error('Supabase not configured') }),
-    signInWithPassword: async () => ({ data: null, error: new Error('Supabase not configured') }),
-    signInWithOAuth: async () => ({ data: null, error: new Error('Supabase not configured') }),
-    signOut: async () => ({ error: null }),
-    getSession: async () => ({ data: { session: null }, error: null }),
-    getUser: async () => ({ data: { user: null }, error: null }),
-    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
-  },
-  from: () => createMockQueryBuilder(),
-  channel: () => ({
-    on: (type: string, filter: any, callback?: any) => ({
-      subscribe: () => ({
-        unsubscribe: () => {}
-      })
-    })
-  }) as any,
-  storage: {
-    from: () => ({
-      upload: async () => ({ data: null, error: new Error('Supabase not configured') }),
-      download: async () => ({ data: null, error: new Error('Supabase not configured') }),
-      getPublicUrl: () => ({ data: { publicUrl: '' } })
-    })
-  }
-}
 
 // Auth helpers
 export const auth = {
