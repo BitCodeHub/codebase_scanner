@@ -7,28 +7,38 @@ import { runtimeConfig } from '../generated/config'
 const supabaseUrl = runtimeConfig.supabaseUrl || import.meta.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = runtimeConfig.supabaseAnonKey || import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
+// Filter out empty strings
+const finalUrl = supabaseUrl?.trim() || ''
+const finalKey = supabaseAnonKey?.trim() || ''
+
 // Initialize client
 export function initializeSupabase() {
   console.log('Initializing Supabase with:', {
-    url: supabaseUrl?.substring(0, 30) + '...',
-    keyLength: supabaseAnonKey?.length,
-    hasUrl: !!supabaseUrl,
-    hasKey: !!supabaseAnonKey
+    url: finalUrl?.substring(0, 30) + '...',
+    keyLength: finalKey?.length,
+    hasUrl: !!finalUrl,
+    hasKey: !!finalKey
   });
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase credentials missing, using mock client');
+  if (!finalUrl || !finalKey || finalUrl === '' || finalKey === '') {
+    console.warn('Supabase credentials missing or empty, using mock client');
     return null;
   }
 
   try {
-    const client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true
-      }
+    // Use the already filtered values
+    const url = finalUrl;
+    const key = finalKey;
+    
+    console.log('Creating Supabase client with:', {
+      url: url.substring(0, 40) + '...',
+      keyLength: key.length,
+      urlValid: url.startsWith('http'),
+      keyValid: key.startsWith('eyJ')
     });
+    
+    // Create client with minimal options first
+    const client = createClient<Database>(url, key);
     console.log('Supabase client created successfully');
     return client;
   } catch (error) {

@@ -50,8 +50,10 @@ export async function runSupabaseDiagnostics() {
     console.log('✅ createClient function found');
     
     // Try creating with minimal options
-    console.log('Creating client with URL:', testUrl.substring(0, 40) + '...');
-    const client = createClient(testUrl, testKey);
+    const url = String(testUrl).trim();
+    const key = String(testKey).trim();
+    console.log('Creating client with URL:', url.substring(0, 40) + '...');
+    const client = createClient(url, key);
     console.log('✅ Client created successfully!', client);
     
     console.groupEnd();
