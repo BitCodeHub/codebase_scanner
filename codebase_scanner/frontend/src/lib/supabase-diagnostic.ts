@@ -1,7 +1,7 @@
 // Diagnostic file to debug Supabase initialization
 import { runtimeConfig } from '../generated/config'
 
-export function runSupabaseDiagnostics() {
+export async function runSupabaseDiagnostics() {
   console.group('🔍 Supabase Diagnostics');
   
   // 1. Check runtime config
@@ -45,8 +45,8 @@ export function runSupabaseDiagnostics() {
   }
   
   try {
-    // First, let's see if the createClient function exists
-    const { createClient } = require('@supabase/supabase-js');
+    // Import using ES modules syntax, not require
+    const { createClient } = await import('@supabase/supabase-js');
     console.log('✅ createClient function found');
     
     // Try creating with minimal options
@@ -70,11 +70,11 @@ export function runSupabaseDiagnostics() {
 }
 
 // Also export a function to test with hardcoded values
-export function testHardcodedSupabase() {
+export async function testHardcodedSupabase() {
   console.group('🧪 Testing with hardcoded values');
   
   try {
-    const { createClient } = require('@supabase/supabase-js');
+    const { createClient } = await import('@supabase/supabase-js');
     
     // These are test values - not real
     const testUrl = 'https://xyzxyzxyz.supabase.co';

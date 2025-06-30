@@ -20,10 +20,13 @@ function App() {
 
   useEffect(() => {
     // Run diagnostics first
-    console.log('=== Running Supabase Diagnostics ===');
-    runSupabaseDiagnostics();
-    testHardcodedSupabase();
-    console.log('=== End Diagnostics ===');
+    const runDiagnostics = async () => {
+      console.log('=== Running Supabase Diagnostics ===');
+      await runSupabaseDiagnostics();
+      await testHardcodedSupabase();
+      console.log('=== End Diagnostics ===');
+    };
+    runDiagnostics();
     
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: any } }) => {
