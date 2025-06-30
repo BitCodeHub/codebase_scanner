@@ -4,6 +4,7 @@ Export API endpoints for generating reports.
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import StreamingResponse
 import io
+import json
 
 from src.dependencies import get_current_user
 from src.models.user import User

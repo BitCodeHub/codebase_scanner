@@ -125,6 +125,13 @@ class ScanResult(BaseModel):
     test_id: Optional[str] = None
 
 
+class ScanType(str, Enum):
+    """Scan type enumeration"""
+    FULL = "full"
+    QUICK = "quick"
+    CUSTOM = "custom"
+
+
 class Scan(BaseModel):
     """Complete scan model"""
     id: str = Field(..., description="Unique scan ID")
@@ -150,7 +157,7 @@ class Scan(BaseModel):
     scanners: List[str] = Field(default_factory=list, description="Enabled scanners")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
                 "user_id": "user123",
@@ -180,9 +187,9 @@ class ScanListResponse(BaseModel):
     offset: int
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
-                "scans": [Scan.Config.schema_extra["example"]],
+                "scans": [Scan.Config.json_schema_extra["example"]],
                 "total": 50,
                 "limit": 10,
                 "offset": 0
@@ -198,7 +205,7 @@ class ScanResultsResponse(BaseModel):
     filters: Optional[Dict[str, Any]] = None
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "results": [
                     {
@@ -220,3 +227,63 @@ class ScanResultsResponse(BaseModel):
                 "scan_id": "550e8400-e29b-41d4-a716-446655440000"
             }
         }
+
+
+class ScanResponse(BaseModel):
+    """Response model for scan creation/retrieval"""
+    id: str
+    project_id: str
+    scan_type: ScanType
+    status: ScanStatus
+    created_at: str
+    message: Optional[str] = None
+    repository_url: Optional[str] = None
+    branch: Optional[str] = None
+    scan_id: Optional[str] = None
+    file_name: Optional[str] = None
+    file_size: Optional[int] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    progress: Optional[int] = 0
+    total_findings: Optional[int] = 0
+    error_message: Optional[str] = None
+
+
+class ScanResultResponse(BaseModel):
+    """Response model for individual scan results"""
+    id: Optional[str] = None
+    scan_id: str
+    scanner: str
+    rule_id: str
+    title: str
+    description: str
+    severity: ScanSeverity
+    category: str
+    confidence: str = "MEDIUM"
+    file_path: str
+    line_start: int = 0
+    line_end: int = 0
+    column_start: int = 0
+    column_end: int = 0
+    code_snippet: Optional[str] = None
+    fix_guidance: Optional[str] = None
+    references: List[str] = Field(default_factory=list)
+    cwe: Optional[str] = None
+    owasp: Optional[str] = None
+    fingerprint: Optional[str] = None
+    risk_score: Optional[int] = None
+    fix_priority: Optional[int] = None
+    created_at: Optional[str] = None
+
+
+class ScanProgressResponse(BaseModel):
+    """Response model for scan progress"""
+    scan_id: str
+    status: ScanStatus
+    progress: int = Field(ge=0, le=100)
+    current_scanner: Optional[str] = None
+    completed_scanners: List[str] = Field(default_factory=list)
+    pending_scanners: List[str] = Field(default_factory=list)
+    messages: List[str] = Field(default_factory=list)
+    started_at: Optional[str] = None
+    estimated_time_remaining: Optional[int] = None
