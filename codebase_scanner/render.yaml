@@ -40,9 +40,9 @@ services:
       - key: NODE_VERSION
         value: "20"
       - key: VITE_SUPABASE_URL
-        sync: false
+        sync: true  # Safe to expose - public Supabase URL
       - key: VITE_SUPABASE_ANON_KEY
-        sync: false
+        sync: true  # Safe to expose - anon key is meant for frontend use
       - key: VITE_API_URL
         value: "https://codebase-scanner-backend.onrender.com"
     headers:

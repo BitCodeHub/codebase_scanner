@@ -3,11 +3,21 @@ import type { Database } from '../types/database'
 import { runtimeConfig } from '../generated/config'
 
 // Use generated config which has build-time environment variables
-const supabaseUrl = runtimeConfig.supabaseUrl || import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = runtimeConfig.supabaseAnonKey || import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key'
+const supabaseUrl = runtimeConfig.supabaseUrl || import.meta.env.VITE_SUPABASE_URL || ''
+const supabaseAnonKey = runtimeConfig.supabaseAnonKey || import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
+// Debug: Log all config sources
+console.log('Config Debug:', {
+  runtimeConfigUrl: runtimeConfig.supabaseUrl,
+  runtimeConfigKey: runtimeConfig.supabaseAnonKey,
+  envUrl: import.meta.env.VITE_SUPABASE_URL,
+  envKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+  finalUrl: supabaseUrl,
+  finalKey: supabaseAnonKey
+})
 
 // Only throw error in production if variables are missing
-if (import.meta.env.PROD && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY)) {
+if (import.meta.env.PROD && (!supabaseUrl || !supabaseAnonKey)) {
   console.error('Missing Supabase environment variables in production')
 }
 
@@ -18,7 +28,8 @@ console.log('Supabase Configuration:', {
   urlValue: supabaseUrl?.substring(0, 30) + '...',
   keyValue: supabaseAnonKey?.substring(0, 20) + '...',
   isProd: import.meta.env.PROD,
-  mode: import.meta.env.MODE
+  mode: import.meta.env.MODE,
+  runtimeConfig: runtimeConfig
 })
 
 // Create a mock query builder that returns proper chainable methods
@@ -51,19 +62,32 @@ const createMockQueryBuilder = () => {
   return builder;
 };
 
-// Create the Supabase client - always use real client when URL starts with https://
-const shouldUseRealClient = supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('https://');
+// Validate configuration - must have valid URL and key
+const isValidUrl = supabaseUrl && supabaseUrl.length > 0 && supabaseUrl.startsWith('https://');
+const isValidKey = supabaseAnonKey && supabaseAnonKey.length > 0;
+const shouldUseRealClient = isValidUrl && isValidKey;
 
-console.log('Using real Supabase client:', shouldUseRealClient);
+console.log('Using real Supabase client:', shouldUseRealClient, {
+  isValidUrl,
+  isValidKey,
+  urlLength: supabaseUrl?.length,
+  keyLength: supabaseAnonKey?.length
+});
 
 // Initialize Supabase client with error handling
 let supabaseClient: any;
 
 if (shouldUseRealClient) {
   try {
-    // Ensure values are strings
-    const url = String(supabaseUrl);
-    const key = String(supabaseAnonKey);
+    // Ensure values are valid strings
+    const url = String(supabaseUrl).trim();
+    const key = String(supabaseAnonKey).trim();
+    
+    // Final validation before creating client
+    if (!url || !key || url === 'undefined' || key === 'undefined' || url === '' || key === '') {
+      console.error('Invalid Supabase credentials:', { url, key });
+      throw new Error('Invalid Supabase credentials');
+    }
     
     console.log('Creating Supabase client with:', {
       url: url.substring(0, 30) + '...',

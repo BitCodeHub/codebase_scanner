@@ -8,6 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 console.log('🔧 Generating runtime configuration...');
+console.log('Environment variables available:', Object.keys(process.env).filter(k => k.startsWith('VITE_')));
 
 // Read environment variables
 const config = {
@@ -17,6 +18,14 @@ const config = {
   environment: process.env.NODE_ENV || 'development',
   buildTime: new Date().toISOString()
 };
+
+// Warn if critical variables are missing
+if (!config.supabaseUrl || !config.supabaseAnonKey) {
+  console.warn('⚠️  WARNING: Supabase environment variables are missing!');
+  console.warn('   VITE_SUPABASE_URL:', config.supabaseUrl ? 'Set' : 'MISSING');
+  console.warn('   VITE_SUPABASE_ANON_KEY:', config.supabaseAnonKey ? 'Set' : 'MISSING');
+  console.warn('   The app will use mock Supabase client.');
+}
 
 // Create the generated directory if it doesn't exist
 const generatedDir = path.join(process.cwd(), 'src', 'generated');
