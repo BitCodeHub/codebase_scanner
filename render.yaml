@@ -74,7 +74,7 @@ services:
     name: codebase-scanner-worker
     runtime: python
     buildCommand: cd codebase_scanner && pip install -r backend/requirements.txt
-    startCommand: cd codebase_scanner/backend && celery -A app.celery_app worker --loglevel=info
+    startCommand: cd codebase_scanner/backend && celery -A app.celery_app_simple worker --loglevel=info
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.0"
