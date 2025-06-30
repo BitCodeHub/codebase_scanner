@@ -54,15 +54,37 @@ const shouldUseRealClient = supabaseUrl && supabaseAnonKey && supabaseUrl.starts
 
 console.log('Using real Supabase client:', shouldUseRealClient);
 
-export const supabase = shouldUseRealClient
-  ? createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// Initialize Supabase client with error handling
+let supabaseClient: any;
+
+if (shouldUseRealClient) {
+  try {
+    // Ensure values are strings
+    const url = String(supabaseUrl);
+    const key = String(supabaseAnonKey);
+    
+    console.log('Creating Supabase client with:', {
+      url: url.substring(0, 30) + '...',
+      keyLength: key.length,
+      urlType: typeof url,
+      keyType: typeof key
+    });
+    
+    supabaseClient = createClient<Database>(url, key, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true
       }
-    })
-  : {
+    });
+  } catch (error) {
+    console.error('Failed to create Supabase client:', error);
+    // Fall back to mock client
+    supabaseClient = null;
+  }
+}
+
+export const supabase = supabaseClient || {
   auth: {
     signUp: async () => ({ data: null, error: new Error('Supabase not configured') }),
     signInWithPassword: async () => ({ data: null, error: new Error('Supabase not configured') }),
@@ -79,7 +101,7 @@ export const supabase = shouldUseRealClient
         unsubscribe: () => {}
       })
     })
-  }),
+  }) as any,
   storage: {
     from: () => ({
       upload: async () => ({ data: null, error: new Error('Supabase not configured') }),
