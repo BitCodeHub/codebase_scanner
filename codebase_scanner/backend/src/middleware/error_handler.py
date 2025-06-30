@@ -65,7 +65,8 @@ async def error_handler_middleware(request: Request, call_next):
     error_id = str(uuid.uuid4())
     
     try:
-        return await call_next(request)
+        response = await call_next(request)
+        return response
         
     except AppException as e:
         # Log application exceptions
@@ -93,6 +94,27 @@ async def error_handler_middleware(request: Request, call_next):
     except HTTPException as e:
         # Handle FastAPI HTTP exceptions
         logger.warning(f"HTTP exception: {e.detail}", extra={
+            "error_id": error_id,
+            "status_code": e.status_code,
+            "path": request.url.path,
+            "method": request.method
+        })
+        
+        return JSONResponse(
+            status_code=e.status_code,
+            content={
+                "error": {
+                    "message": e.detail,
+                    "type": "HTTPException",
+                    "error_id": error_id,
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            }
+        )
+        
+    except StarletteHTTPException as e:
+        # Handle Starlette HTTP exceptions
+        logger.warning(f"Starlette HTTP exception: {e.detail}", extra={
             "error_id": error_id,
             "status_code": e.status_code,
             "path": request.url.path,
@@ -167,8 +189,32 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         }
     )
 
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Handle HTTP exceptions."""
+    error_id = str(uuid.uuid4())
+    
+    logger.warning(f"HTTP exception: {exc.detail}", extra={
+        "error_id": error_id,
+        "status_code": exc.status_code,
+        "path": request.url.path,
+        "method": request.method
+    })
+    
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": {
+                "message": exc.detail,
+                "type": "HTTPException",
+                "error_id": error_id,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        }
+    )
+
 def setup_exception_handlers(app):
     """Setup exception handlers for the FastAPI app."""
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(StarletteHTTPException, error_handler_middleware)
+    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+    app.add_exception_handler(HTTPException, http_exception_handler)
     app.middleware("http")(error_handler_middleware)
