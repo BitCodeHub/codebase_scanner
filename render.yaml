@@ -1,0 +1,106 @@
+services:
+  # Backend API Service
+  - type: web
+    name: codebase-scanner-backend
+    runtime: python
+    buildCommand: cd codebase_scanner && pip install -r backend/requirements.txt
+    startCommand: cd codebase_scanner/backend && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: codebase-scanner-redis
+          property: connectionString
+      - key: CORS_ORIGINS
+        value: "https://codebase-scanner-frontend.onrender.com,http://localhost:5173"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: codebase-scanner-db
+          property: connectionString
+    autoDeploy: true
+    plan: free
+
+  # Frontend Static Site
+  - type: web
+    name: codebase-scanner-frontend
+    runtime: static
+    buildCommand: cd codebase_scanner/frontend && npm install && npm run build
+    staticPublishPath: ./codebase_scanner/frontend/dist
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: VITE_API_URL
+        value: "https://codebase-scanner-backend.onrender.com"
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-XSS-Protection
+        value: 1; mode=block
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    autoDeploy: true
+    plan: free
+
+  # Redis for caching and Celery
+  - type: redis
+    name: codebase-scanner-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: [] # Allow connections from Render services
+
+  # Background Worker for Celery
+  - type: worker
+    name: codebase-scanner-worker
+    runtime: python
+    buildCommand: cd codebase_scanner && pip install -r backend/requirements.txt
+    startCommand: cd codebase_scanner/backend && celery -A app.celery_app worker --loglevel=info
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: codebase-scanner-redis
+          property: connectionString
+      - key: DATABASE_URL
+        fromDatabase:
+          name: codebase-scanner-db
+          property: connectionString
+    autoDeploy: true
+    plan: free
+
+databases:
+  - name: codebase-scanner-db
+    plan: free
+    databaseName: codebase_scanner
+    user: codebase_scanner
