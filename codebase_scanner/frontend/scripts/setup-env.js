@@ -7,6 +7,22 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Load existing .env file if it exists
+const envPath = path.join(process.cwd(), '.env');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const trimmedLine = line.trim();
+    if (trimmedLine && !trimmedLine.startsWith('#')) {
+      const [key, ...valueParts] = trimmedLine.split('=');
+      const value = valueParts.join('=');
+      if (key && value) {
+        process.env[key] = value;
+      }
+    }
+  });
+}
+
 console.log('🔧 Setting up environment for build...');
 console.log('================================');
 console.log('Environment:', process.env.NODE_ENV || 'development');
