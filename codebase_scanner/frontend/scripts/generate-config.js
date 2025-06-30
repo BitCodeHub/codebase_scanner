@@ -33,6 +33,18 @@ if (!fs.existsSync(generatedDir)) {
   fs.mkdirSync(generatedDir, { recursive: true });
 }
 
+// Remove old config files to ensure fresh generation
+const configPath = path.join(generatedDir, 'config.ts');
+const jsonPath = path.join(generatedDir, 'config.json');
+if (fs.existsSync(configPath)) {
+  fs.unlinkSync(configPath);
+  console.log('🗑️  Removed old config.ts');
+}
+if (fs.existsSync(jsonPath)) {
+  fs.unlinkSync(jsonPath);
+  console.log('🗑️  Removed old config.json');
+}
+
 // Generate TypeScript config file
 const tsConfigContent = `// This file is auto-generated. Do not edit manually.
 // Generated at: ${config.buildTime}

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Production build
+dist/
+build/
+
+# Generated files - these should be created at build time
+src/generated/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
