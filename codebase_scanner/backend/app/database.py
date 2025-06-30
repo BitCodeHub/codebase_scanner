@@ -10,10 +10,22 @@ class SupabaseClient:
     """Supabase database client for the scanner application"""
     
     def __init__(self):
-        self.client: Client = create_client(
-            settings.supabase_url,
-            settings.supabase_service_key
-        )
+        self._client: Optional[Client] = None
+        self._initialized = False
+    
+    @property
+    def client(self) -> Client:
+        """Lazy initialization of Supabase client"""
+        if not self._initialized:
+            if not settings.supabase_url or not settings.supabase_service_key:
+                raise ValueError("Supabase credentials not configured. Please set SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables.")
+            
+            self._client = create_client(
+                settings.supabase_url,
+                settings.supabase_service_key
+            )
+            self._initialized = True
+        return self._client
     
     # Projects
     async def get_projects(self, user_id: str, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:

@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
+        # Check for SUPABASE_SERVICE_ROLE_KEY if SUPABASE_SERVICE_KEY is not set
+        if not self.supabase_service_key and os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
+            self.supabase_service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        
         # Ensure upload directory exists
         os.makedirs(self.upload_dir, exist_ok=True)
 
