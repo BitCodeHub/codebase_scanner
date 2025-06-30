@@ -17,6 +17,36 @@ console.log('Supabase Configuration:', {
   keyValue: supabaseAnonKey?.substring(0, 20) + '...'
 })
 
+// Create a mock query builder that returns proper chainable methods
+const createMockQueryBuilder = () => {
+  const mockResult = { data: [], error: null, count: 0 };
+  const builder: any = {
+    select: () => builder,
+    insert: () => builder,
+    update: () => builder,
+    upsert: () => builder,
+    delete: () => builder,
+    eq: () => builder,
+    neq: () => builder,
+    gt: () => builder,
+    lt: () => builder,
+    gte: () => builder,
+    lte: () => builder,
+    like: () => builder,
+    ilike: () => builder,
+    is: () => builder,
+    in: () => builder,
+    order: () => builder,
+    limit: () => builder,
+    range: () => builder,
+    single: () => Promise.resolve({ data: null, error: null }),
+    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+    then: (resolve: any) => resolve(mockResult),
+    error: null
+  };
+  return builder;
+};
+
 // Create the Supabase client
 export const supabase = (supabaseUrl && supabaseAnonKey && 
   supabaseUrl !== 'https://placeholder.supabase.co' && 
@@ -38,16 +68,9 @@ export const supabase = (supabaseUrl && supabaseAnonKey &&
     getUser: async () => ({ data: { user: null }, error: null }),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
   },
-  from: () => ({
-    select: () => ({ data: [], error: null }),
-    insert: () => ({ select: () => ({ single: () => ({ data: null, error: new Error('Supabase not configured') }) }) }),
-    update: () => ({ eq: () => ({ select: () => ({ single: () => ({ data: null, error: new Error('Supabase not configured') }) }) }) }),
-    delete: () => ({ eq: () => ({ data: null, error: null }) }),
-    eq: () => ({ single: () => ({ data: null, error: null }) }),
-    order: () => ({ data: [], error: null })
-  }),
+  from: () => createMockQueryBuilder(),
   channel: () => ({
-    on: () => ({ subscribe: () => {} })
+    on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) })
   }),
   storage: {
     from: () => ({

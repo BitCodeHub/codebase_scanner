@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import { supabase, db } from '../../lib/supabase'
 import { XIcon, UploadIcon, GitBranchIcon } from 'lucide-react'
 import LoadingSpinner from '../ui/LoadingSpinner'
 
@@ -30,16 +30,12 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
         throw new Error('User not authenticated')
       }
 
-      const { error } = await supabase
-        .from('projects')
-        .insert([
-          {
-            name: formData.name,
-            description: formData.description,
-            github_repo_url: formData.source_type === 'github' ? formData.github_repo_url : null,
-            owner_id: user.id
-          }
-        ])
+      const { error } = await db.projects.create({
+        name: formData.name,
+        description: formData.description,
+        github_repo_url: formData.source_type === 'github' ? formData.github_repo_url : null,
+        owner_id: user.id
+      })
 
       if (error) throw error
 

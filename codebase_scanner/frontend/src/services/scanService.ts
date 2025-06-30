@@ -228,9 +228,11 @@ export async function simulateScan(scanId: number, projectId: number) {
     ]
 
     // Insert mock vulnerabilities
-    const { error: insertError } = await supabase
+    const insertResult = await supabase
       .from('scan_results')
       .insert(mockVulnerabilities)
+    
+    const insertError = 'error' in insertResult ? insertResult.error : null
 
     if (insertError) throw insertError
 
