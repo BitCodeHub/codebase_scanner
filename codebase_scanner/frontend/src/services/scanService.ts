@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase'
+import { runtimeConfig } from '../generated/config'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_BASE_URL = runtimeConfig.apiUrl || import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export interface ScanOptions {
   scanType: 'quick' | 'comprehensive' | 'custom'
