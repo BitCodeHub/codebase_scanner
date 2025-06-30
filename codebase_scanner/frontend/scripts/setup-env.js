@@ -46,18 +46,23 @@ Object.entries(envVars).forEach(([key, value]) => {
   console.log(`  ${key}: ${displayValue}`);
 });
 
-// Create .env file for Vite
-const envContent = Object.entries(envVars)
-  .map(([key, value]) => `${key}=${value}`)
-  .join('\n');
+// Only create .env files if not on Render (Render provides env vars directly)
+if (!isRender) {
+  // Create .env file for Vite
+  const envContent = Object.entries(envVars)
+    .map(([key, value]) => `${key}=${value}`)
+    .join('\n');
 
-fs.writeFileSync('.env', envContent);
-console.log('✅ Created .env file');
+  fs.writeFileSync('.env', envContent);
+  console.log('✅ Created .env file');
 
-// Also create .env.local and .env.production for redundancy
-fs.writeFileSync('.env.local', envContent);
-fs.writeFileSync('.env.production', envContent);
-console.log('✅ Created .env.local and .env.production files');
+  // Also create .env.local and .env.production for redundancy
+  fs.writeFileSync('.env.local', envContent);
+  fs.writeFileSync('.env.production', envContent);
+  console.log('✅ Created .env.local and .env.production files');
+} else {
+  console.log('📦 Running on Render - using environment variables directly');
+}
 
 console.log('✅ Environment setup complete');
 console.log('================================');

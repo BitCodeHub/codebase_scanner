@@ -7,24 +7,35 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load .env file if it exists
-const envPath = path.join(process.cwd(), '.env');
-if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, 'utf8');
-  envContent.split('\n').forEach(line => {
-    const trimmedLine = line.trim();
-    if (trimmedLine && !trimmedLine.startsWith('#')) {
-      const [key, ...valueParts] = trimmedLine.split('=');
-      const value = valueParts.join('=');
-      if (key && value) {
-        process.env[key] = value;
+// Only load .env file if not on Render
+const isRender = process.env.RENDER === 'true';
+if (!isRender) {
+  const envPath = path.join(process.cwd(), '.env');
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    envContent.split('\n').forEach(line => {
+      const trimmedLine = line.trim();
+      if (trimmedLine && !trimmedLine.startsWith('#')) {
+        const [key, ...valueParts] = trimmedLine.split('=');
+        const value = valueParts.join('=');
+        if (key && value) {
+          process.env[key] = value;
+        }
       }
-    }
-  });
+    });
+  }
 }
 
 console.log('🔧 Generating runtime configuration...');
+console.log('Is Render environment:', isRender);
 console.log('Environment variables available:', Object.keys(process.env).filter(k => k.startsWith('VITE_')));
+
+// Debug: Log specific env vars (safely)
+if (isRender) {
+  console.log('VITE_SUPABASE_URL:', process.env.VITE_SUPABASE_URL ? 'Set' : 'Not set');
+  console.log('VITE_SUPABASE_ANON_KEY:', process.env.VITE_SUPABASE_ANON_KEY ? 'Set' : 'Not set');
+  console.log('VITE_API_URL:', process.env.VITE_API_URL || 'Not set');
+}
 
 // Read environment variables
 const config = {
