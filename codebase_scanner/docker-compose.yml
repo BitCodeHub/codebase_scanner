@@ -1,58 +1,118 @@
 version: '3.8'
 
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "5173:5173"
-    environment:
-      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
-      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    depends_on:
-      - backend
-
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: codebase-scanner-backend
     ports:
       - "8000:8000"
     environment:
       - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
-      - REDIS_URL=${REDIS_URL}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-4.0-sonnet}
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=${SECRET_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - WORKERS=${WORKERS:-4}
+      - PYTHON_ENV=production
     volumes:
-      - ./backend:/app
-      - /app/__pycache__
+      - ./backend/logs:/app/logs
+      - ./backend/temp:/app/temp
     depends_on:
       - redis
+    restart: unless-stopped
+    networks:
+      - app-network
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-
-  celery:
+  celery-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: celery -A app.celery_app worker --loglevel=info
+    container_name: codebase-scanner-celery
+    command: celery -A app.celery_app worker -l info -Q scans,ai,exports -c 4
     environment:
       - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
-      - REDIS_URL=${REDIS_URL}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-4.0-sonnet}
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=${SECRET_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - PYTHON_ENV=production
     volumes:
-      - ./backend:/app
+      - ./backend/logs:/app/logs
+      - ./backend/temp:/app/temp
     depends_on:
       - redis
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: codebase-scanner-celery-beat
+    command: celery -A app.celery_app beat -l info
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - PYTHON_ENV=production
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    container_name: codebase-scanner-frontend
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: codebase-scanner-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: codebase-scanner-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    networks:
+      - app-network
 
 volumes:
-  redis_data:
+  redis-data:
+
+networks:
+  app-network:
+    driver: bridge

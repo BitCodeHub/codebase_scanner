@@ -1,0 +1,14 @@
+
+> codebase-scanner-frontend@1.0.0 dev
+> vite
+
+
+  VITE v4.5.14  ready in 130 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://192.168.1.127:5173/
+4:42:30 AM [vite] .env changed, restarting server...
+4:42:30 AM [vite] .env changed, restarting server...
+4:42:30 AM [vite] server restarted.
+4:42:31 AM [vite] .env changed, restarting server...
+4:42:31 AM [vite] server restarted.

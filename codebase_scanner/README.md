@@ -1,15 +1,17 @@
-# Codebase Scanner
+# Codebase Security Scanner
 
-A production-grade security scanner for analyzing codebases and detecting vulnerabilities.
+A production-ready security scanning platform that analyzes source code for vulnerabilities using multiple scanning engines and provides AI-powered recommendations via Claude.
 
 ## Features
 
-- 🔍 **Static Code Analysis**: Detect security vulnerabilities, code quality issues
-- 📦 **Dependency Scanning**: Identify vulnerable dependencies and outdated packages  
-- 🛡️ **OWASP Integration**: Follow OWASP Top 10 and industry security standards
-- 📊 **Professional Reporting**: CVSS scoring, compliance mappings, risk assessment
-- 🔐 **Enterprise Auth**: Supabase authentication with role-based access
-- 🚀 **Scalable Architecture**: Built for production with Docker and microservices
+- 🔍 **Multi-Engine Scanning**: Integrates Semgrep, Bandit, Safety, and GitLeaks
+- 🤖 **AI-Powered Analysis**: Uses Claude 4.0 Sonnet for intelligent vulnerability analysis
+- 📊 **Real-time Progress**: WebSocket-based real-time scan progress updates
+- 🛡️ **OWASP Integration**: Maps findings to OWASP Top 10 and security standards
+- 📈 **Comprehensive Dashboard**: Security metrics, vulnerability trends, and scan history
+- 🔐 **Enterprise Auth**: JWT-based authentication with Supabase
+- 🚀 **Production Ready**: Rate limiting, error handling, logging, and monitoring
+- 🐳 **Containerized**: Docker and Docker Compose for easy deployment
 
 ## Tech Stack
 
