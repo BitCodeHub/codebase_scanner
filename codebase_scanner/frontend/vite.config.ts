@@ -10,4 +10,15 @@ export default defineConfig({
   define: {
     global: 'globalThis',
   },
+  build: {
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'supabase-vendor': ['@supabase/supabase-js'],
+        }
+      }
+    }
+  }
 })
