@@ -9,25 +9,26 @@ if (import.meta.env.PROD && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.
   console.error('Missing Supabase environment variables in production')
 }
 
-// Create a conditional client that handles missing configuration
-let supabaseClient: any = null;
+// Log configuration status
+console.log('Supabase Configuration:', {
+  url: supabaseUrl ? 'Set' : 'Missing',
+  key: supabaseAnonKey ? 'Set' : 'Missing',
+  urlValue: supabaseUrl?.substring(0, 30) + '...',
+  keyValue: supabaseAnonKey?.substring(0, 20) + '...'
+})
 
-try {
-  if (supabaseUrl && supabaseAnonKey && supabaseUrl !== 'https://placeholder.supabase.co') {
-    supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// Create the Supabase client
+export const supabase = (supabaseUrl && supabaseAnonKey && 
+  supabaseUrl !== 'https://placeholder.supabase.co' && 
+  supabaseAnonKey !== 'placeholder-key') 
+  ? createClient<Database>(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true
       }
     })
-  }
-} catch (error) {
-  console.error('Failed to initialize Supabase client:', error)
-}
-
-// Create a mock client if Supabase is not configured
-export const supabase = supabaseClient || {
+  : {
   auth: {
     signUp: async () => ({ data: null, error: new Error('Supabase not configured') }),
     signInWithPassword: async () => ({ data: null, error: new Error('Supabase not configured') }),
