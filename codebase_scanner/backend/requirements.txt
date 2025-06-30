@@ -43,7 +43,7 @@ zipfile38==0.0.3
 pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
-httpx==0.25.2
+httpx==0.24.1
 
 # Logging and monitoring
 structlog==23.2.0
