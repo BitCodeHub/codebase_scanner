@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { Session } from '@supabase/supabase-js'
+import { runSupabaseDiagnostics, testHardcodedSupabase } from './lib/supabase-diagnostic'
 
 // Components
 import Layout from './components/layout/Layout'
@@ -18,6 +19,12 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Run diagnostics first
+    console.log('=== Running Supabase Diagnostics ===');
+    runSupabaseDiagnostics();
+    testHardcodedSupabase();
+    console.log('=== End Diagnostics ===');
+    
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: any } }) => {
       setSession(session)
