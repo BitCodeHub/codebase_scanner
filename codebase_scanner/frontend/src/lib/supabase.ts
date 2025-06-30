@@ -169,10 +169,12 @@ export const db = {
     update: (id: number, updates: Database['public']['Tables']['scans']['Update']) =>
       supabase.from('scans').update(updates).eq('id', id).select().single(),
     
-    subscribe: (callback: (payload: any) => void) =>
-      supabase.channel('scans')
+    subscribe: (callback: (payload: any) => void) => {
+      const channel = supabase.channel('scans') as any;
+      return channel
         .on('postgres_changes', { event: '*', schema: 'public', table: 'scans' }, callback)
         .subscribe()
+    }
   },
 
   // Scan Results
