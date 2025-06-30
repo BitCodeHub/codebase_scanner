@@ -14,7 +14,9 @@ console.log('Supabase Configuration:', {
   url: supabaseUrl ? 'Set' : 'Missing',
   key: supabaseAnonKey ? 'Set' : 'Missing',
   urlValue: supabaseUrl?.substring(0, 30) + '...',
-  keyValue: supabaseAnonKey?.substring(0, 20) + '...'
+  keyValue: supabaseAnonKey?.substring(0, 20) + '...',
+  isProd: import.meta.env.PROD,
+  mode: import.meta.env.MODE
 })
 
 // Create a mock query builder that returns proper chainable methods
@@ -47,10 +49,12 @@ const createMockQueryBuilder = () => {
   return builder;
 };
 
-// Create the Supabase client
-export const supabase = (supabaseUrl && supabaseAnonKey && 
-  supabaseUrl !== 'https://placeholder.supabase.co' && 
-  supabaseAnonKey !== 'placeholder-key') 
+// Create the Supabase client - always use real client when URL starts with https://
+const shouldUseRealClient = supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('https://');
+
+console.log('Using real Supabase client:', shouldUseRealClient);
+
+export const supabase = shouldUseRealClient
   ? createClient<Database>(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
