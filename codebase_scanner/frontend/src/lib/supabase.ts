@@ -9,13 +9,53 @@ if (import.meta.env.PROD && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.
   console.error('Missing Supabase environment variables in production')
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
+// Create a conditional client that handles missing configuration
+let supabaseClient: any = null;
+
+try {
+  if (supabaseUrl && supabaseAnonKey && supabaseUrl !== 'https://placeholder.supabase.co') {
+    supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      }
+    })
   }
-})
+} catch (error) {
+  console.error('Failed to initialize Supabase client:', error)
+}
+
+// Create a mock client if Supabase is not configured
+export const supabase = supabaseClient || {
+  auth: {
+    signUp: async () => ({ data: null, error: new Error('Supabase not configured') }),
+    signInWithPassword: async () => ({ data: null, error: new Error('Supabase not configured') }),
+    signInWithOAuth: async () => ({ data: null, error: new Error('Supabase not configured') }),
+    signOut: async () => ({ error: null }),
+    getSession: async () => ({ data: { session: null }, error: null }),
+    getUser: async () => ({ data: { user: null }, error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+  },
+  from: () => ({
+    select: () => ({ data: [], error: null }),
+    insert: () => ({ select: () => ({ single: () => ({ data: null, error: new Error('Supabase not configured') }) }) }),
+    update: () => ({ eq: () => ({ select: () => ({ single: () => ({ data: null, error: new Error('Supabase not configured') }) }) }) }),
+    delete: () => ({ eq: () => ({ data: null, error: null }) }),
+    eq: () => ({ single: () => ({ data: null, error: null }) }),
+    order: () => ({ data: [], error: null })
+  }),
+  channel: () => ({
+    on: () => ({ subscribe: () => {} })
+  }),
+  storage: {
+    from: () => ({
+      upload: async () => ({ data: null, error: new Error('Supabase not configured') }),
+      download: async () => ({ data: null, error: new Error('Supabase not configured') }),
+      getPublicUrl: () => ({ data: { publicUrl: '' } })
+    })
+  }
+}
 
 // Auth helpers
 export const auth = {
