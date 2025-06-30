@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/setup-env.js && node scripts/generate-config.js",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
