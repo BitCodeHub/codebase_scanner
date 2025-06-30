@@ -76,8 +76,8 @@ services:
   - type: worker
     name: codebase-scanner-worker
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: cd backend && celery -A app.celery_app worker --loglevel=info
+    buildCommand: cd codebase_scanner && pip install -r backend/requirements.txt
+    startCommand: cd codebase_scanner/backend && python -c "import os; print('REDIS_URL:', os.getenv('REDIS_URL', 'NOT SET'))" && celery -A app.celery_app worker --loglevel=info
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"

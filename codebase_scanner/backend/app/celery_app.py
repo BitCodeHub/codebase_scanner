@@ -2,6 +2,7 @@
 Celery configuration for background task processing.
 """
 import os
+import sys
 from celery import Celery
 from celery.signals import setup_logging
 from dotenv import load_dotenv
@@ -9,11 +10,16 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Get Redis URL from environment
+redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+print(f"[Celery Config] REDIS_URL from env: {redis_url}", file=sys.stderr)
+print(f"[Celery Config] All env vars with REDIS: {[k for k in os.environ.keys() if 'REDIS' in k]}", file=sys.stderr)
+
 # Create Celery instance
 celery_app = Celery(
     "codebase_scanner",
-    broker=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
-    backend=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+    broker=redis_url,
+    backend=redis_url,
     include=["app.tasks.scan_tasks", "app.tasks.ai_tasks"]
 )
 
