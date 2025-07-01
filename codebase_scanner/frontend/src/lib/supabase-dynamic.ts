@@ -26,7 +26,7 @@ export async function getSupabaseClient(): Promise<SupabaseClient<Database>> {
 
     const { createClient } = supabaseModule;
 
-    clientInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    clientInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
@@ -41,7 +41,11 @@ export async function getSupabaseClient(): Promise<SupabaseClient<Database>> {
       db: {
         schema: 'public',
       },
-    });
+    }) as SupabaseClient<Database>;
+
+    if (!clientInstance) {
+      throw new Error('Failed to create Supabase client instance');
+    }
 
     console.log('Supabase client created successfully (dynamic import)');
     return clientInstance;
