@@ -10,24 +10,35 @@ from src.utils.logging import get_logger
 logger = get_logger(__name__)
 
 @lru_cache()
-def get_supabase_client() -> Optional[Client]:
+def get_supabase_client() -> Client:
     """
     Get Supabase client instance.
     Uses caching to ensure single instance.
-    Returns None if credentials are not configured.
+    Raises exception if credentials are not configured.
     """
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
     
-    if not url or not key:
-        logger.warning("Supabase credentials not configured. Some features will be unavailable.")
-        return None
+    if not url:
+        error_msg = "SUPABASE_URL environment variable is not set"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+    
+    if not key:
+        error_msg = "SUPABASE_SERVICE_ROLE_KEY environment variable is not set"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
     
     try:
-        return create_client(url, key)
+        logger.info(f"Creating Supabase client for URL: {url}")
+        client = create_client(url, key)
+        # Test the connection
+        client.table("projects").select("id").limit(1).execute()
+        logger.info("Supabase client created and tested successfully")
+        return client
     except Exception as e:
         logger.error(f"Failed to create Supabase client: {e}")
-        return None
+        raise
 
 def get_redis_client():
     """

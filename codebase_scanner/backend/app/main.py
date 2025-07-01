@@ -145,25 +145,24 @@ async def debug_auth(request: dict):
         
         # Try to verify with Supabase
         from src.database import get_supabase_client
-        supabase = get_supabase_client()
         
         verification_result = "Not tested"
         user_info = None
         
-        if supabase:
-            try:
-                user_response = supabase.auth.get_user(token)
-                if user_response and user_response.user:
-                    verification_result = "Valid"
-                    user_info = {
-                        "id": user_response.user.id,
-                        "email": user_response.user.email,
-                        "created_at": user_response.user.created_at
-                    }
-                else:
-                    verification_result = "Invalid"
-            except Exception as e:
-                verification_result = f"Error: {str(e)}"
+        try:
+            supabase = get_supabase_client()
+            user_response = supabase.auth.get_user(token)
+            if user_response and user_response.user:
+                verification_result = "Valid"
+                user_info = {
+                    "id": user_response.user.id,
+                    "email": user_response.user.email,
+                    "created_at": user_response.user.created_at
+                }
+            else:
+                verification_result = "Invalid"
+        except Exception as e:
+            verification_result = f"Error: {str(e)}"
         
         return {
             "token_header": header,
