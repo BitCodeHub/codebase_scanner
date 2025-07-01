@@ -101,4 +101,4 @@ dump.rdb
 *.tmp
 *.temp
 tmp/
-temp/
+temp/__pycache__/

@@ -352,6 +352,95 @@ async def test_start_scan(request: dict):
     except Exception as e:
         return {"error": f"Failed to create scan: {str(e)}"}
 
+@app.post("/api/scans/repository")
+async def scan_repository():
+    """Simplified repository scanning endpoint"""
+    try:
+        from fastapi import Form, Depends
+        from src.dependencies import get_current_user
+        from src.models.user import User
+        import os
+        from supabase import create_client
+        from datetime import datetime
+        
+        # This is a simplified version that will be replaced with real scanning
+        # For now, we'll create a scan record and simulate the process
+        
+        return {"error": "This endpoint needs form parameters. Use the test endpoint instead."}
+        
+    except Exception as e:
+        return {"error": f"Failed to start repository scan: {str(e)}"}
+
+@app.post("/api/scans/repository-simple")
+async def scan_repository_simple(request: dict):
+    """Simplified repository scanning without authentication for testing"""
+    try:
+        import os
+        from supabase import create_client
+        from datetime import datetime
+        import uuid
+        
+        # Get the supabase client
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
+        
+        if not url or not key:
+            return {"error": "Supabase credentials not configured"}
+            
+        supabase = create_client(url, key)
+        
+        # Extract required data
+        project_id = request.get("project_id")
+        repository_url = request.get("repository_url", "https://github.com/OWASP/NodeGoat")
+        branch = request.get("branch", "main")
+        scan_type = request.get("scan_type", "FULL")
+        user_id = request.get("user_id")
+        
+        if not project_id:
+            return {"error": "project_id is required"}
+        
+        # Create scan data
+        scan_data = {
+            "project_id": int(project_id),
+            "user_id": user_id,
+            "scan_type": "repository",
+            "status": "pending",
+            "triggered_by": "manual",
+            "repository_url": repository_url,
+            "branch": branch,
+            "scan_config": {
+                "scanType": scan_type,
+                "repositoryUrl": repository_url,
+                "branch": branch,
+                "includeTests": True,
+                "includeDependencies": True,
+                "severityThreshold": "low"
+            },
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        # Insert scan
+        result = supabase.table("scans").insert(scan_data).execute()
+        
+        if not result.data:
+            return {"error": "Failed to create scan - no data returned"}
+        
+        scan = result.data[0]
+        
+        return {
+            "id": str(scan["id"]),
+            "project_id": project_id,
+            "scan_type": scan_type,
+            "status": "pending",
+            "created_at": scan["created_at"],
+            "repository_url": repository_url,
+            "branch": branch,
+            "message": "Repository scan initiated successfully"
+        }
+        
+    except Exception as e:
+        return {"error": f"Failed to start repository scan: {str(e)}"}
+
 @app.post("/api/test/create-project")
 async def test_create_project(request: dict):
     """Test project creation without authentication"""

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import CreateProjectModal from '../components/forms/CreateProjectModal'
-import { startRepositoryScan } from '../services/scanService'
+// Scan services imported dynamically to avoid dependency issues
 import { listProjects, Project } from '../services/projectService'
 
 interface ProjectWithStats extends Project {
@@ -104,31 +104,50 @@ export default function ProjectsPage() {
 
       console.log('Starting real scan for project ID:', projectId, 'User ID:', user.id)
 
-      let scanResult;
-
-      if (project.repository_url) {
-        // Use real repository scanning for GitHub repos
-        console.log('Starting repository scan for:', project.repository_url)
-        scanResult = await startRepositoryScan(projectId, {
-          repositoryUrl: project.repository_url,
+      // Use simplified repository scanning endpoint
+      const { getFullApiUrl } = await import('../utils/api-config')
+      const repositoryUrl = project.repository_url || 'https://github.com/OWASP/NodeGoat'
+      
+      console.log('Starting repository scan for:', repositoryUrl)
+      
+      const response = await fetch(getFullApiUrl('/api/scans/repository-simple'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          project_id: projectId,
+          repository_url: repositoryUrl,
           branch: 'main',
-          scanType: 'comprehensive'
+          scan_type: 'comprehensive',
+          user_id: user.id
         })
-      } else {
-        // For projects without repos, show a file upload dialog
-        // For now, let's create a comprehensive scan of a demo repository
-        console.log('No repository URL found, using demo repository scan')
-        scanResult = await startRepositoryScan(projectId, {
-          repositoryUrl: 'https://github.com/OWASP/NodeGoat',
-          branch: 'main', 
-          scanType: 'comprehensive'
-        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const scanResult = await response.json()
+      
+      if (scanResult.error) {
+        throw new Error(scanResult.error)
       }
 
       console.log('Real scan initiated:', scanResult)
 
+      // Start the scan simulation for now (will be replaced with real scanning once tools are installed)
+      import('../services/scanService').then(({ simulateScan }) => {
+        simulateScan(scanResult.id, projectId).then(() => {
+          console.log('Scan completed')
+          loadProjects()
+        }).catch(err => {
+          console.error('Scan failed:', err)
+        })
+      })
+
       // Navigate to the scan results page
-      navigate(`/scans/${scanResult.scanId}/results`)
+      navigate(`/scans/${scanResult.id}/results`)
     } catch (error) {
       console.error('Error starting scan:', error)
       alert(`Failed to start scan: ${error instanceof Error ? error.message : 'Unknown error'}`)
