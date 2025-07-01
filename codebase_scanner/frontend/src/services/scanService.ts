@@ -89,7 +89,14 @@ export async function analyzeAllVulnerabilities(scanId: string): Promise<{ messa
   const session = await supabase.auth.getSession()
   const token = session.data.session?.access_token
 
-  const response = await fetch(`${API_BASE_URL}/api/ai/scan/${scanId}/analyze-all`, {
+  if (!token) {
+    throw new Error('Not authenticated. Please log in.')
+  }
+
+  const url = `${API_BASE_URL}/api/ai/scan/${scanId}/analyze-all`
+  console.log('Calling analyze-all endpoint:', url)
+
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -98,7 +105,16 @@ export async function analyzeAllVulnerabilities(scanId: string): Promise<{ messa
   })
 
   if (!response.ok) {
-    throw new Error('Failed to start AI analysis')
+    let errorMessage = `Failed to start AI analysis: ${response.status} ${response.statusText}`
+    try {
+      const errorData = await response.json()
+      if (errorData.detail) {
+        errorMessage = errorData.detail
+      }
+    } catch (e) {
+      // Response might not be JSON
+    }
+    throw new Error(errorMessage)
   }
 
   const result = await response.json()

@@ -203,6 +203,7 @@ export default function ScanResults() {
       const result = await analyzeAllVulnerabilities(id!)
       alert(`${result.message}\nTask ID: ${result.taskId}`)
     } catch (error: any) {
+      console.error('Analyze all error:', error)
       alert(`Error: ${error.message}`)
     }
   }

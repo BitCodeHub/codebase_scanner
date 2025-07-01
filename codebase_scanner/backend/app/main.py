@@ -122,8 +122,18 @@ async def test_supabase():
 try:
     from src.api.ai_analysis import router as ai_router
     app.include_router(ai_router, prefix="/api/ai", tags=["AI Analysis"])
-except ImportError:
-    print("AI analysis module not found, skipping...")
+    print("AI analysis routes loaded successfully")
+except ImportError as e:
+    print(f"AI analysis module import error: {e}")
+    # Try loading simplified version without Celery
+    try:
+        from src.api.ai_analysis_simple import router as ai_router
+        app.include_router(ai_router, prefix="/api/ai", tags=["AI Analysis"])
+        print("Simplified AI analysis routes loaded successfully")
+    except ImportError as e2:
+        print(f"Simplified AI analysis module also failed: {e2}")
+except Exception as e:
+    print(f"Error loading AI analysis module: {e}")
 
 try:
     from src.api.scan import router as scan_router
