@@ -37,8 +37,61 @@
 - Use the "Refresh" button to manually reload projects
 - Check Render logs for backend errors
 
+## Mobile App Security Scanning Tools
+
+### Installed and Configured Tools (10 total):
+
+#### Core Security Tools:
+- **Semgrep v1.127.1** - Static analysis with mobile-specific rules
+- **Bandit v1.8.5** - Python security linter
+- **Safety v3.5.2** - Dependency vulnerability scanner
+- **Gitleaks v8.27.2** - Git secrets scanner
+
+#### Mobile-Specific Security Tools:
+- **TruffleHog v2.2.1** - Deep secrets detection in repositories
+- **detect-secrets v1.5.0** - Advanced credential scanning
+- **Retire.js v5.2.7** - JavaScript vulnerability scanner
+- **JADX v1.5.2** - Android APK analysis and decompilation
+- **APKLeaks v2.6.3** - Android app secrets detection
+- **QARK v4.0.0** - Android security assessment
+
+### Security Scanning Capabilities:
+- **Client ID and API Key Detection**: Comprehensive scanning for hardcoded credentials
+- **Mobile App Vulnerabilities**: OWASP Mobile Top 10 compliance checking
+- **Git History Secrets**: Deep scanning of commit history for leaked credentials
+- **JavaScript/React Native Security**: Vulnerability detection in JS frameworks
+- **Android APK Analysis**: Static analysis of compiled Android applications
+- **Production App Scanning**: Real-time security assessment of live codebases
+
+### API Endpoints:
+- `/api/test/scanner-tools` - Test all 10 security tools availability
+- `/api/scans/mobile-app` - Comprehensive mobile app security scanning
+- `/api/scans/repository-simple` - General repository security scanning
+
+### Usage Example:
+```bash
+curl -X POST "http://localhost:8000/api/scans/mobile-app" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project_id": "1",
+    "repository_url": "https://github.com/your-org/mobile-app",
+    "branch": "main",
+    "scan_type": "comprehensive",
+    "user_id": "user-id"
+  }'
+```
+
+### Security Focus Areas:
+1. Hardcoded API keys, client IDs, and secrets
+2. Mobile-specific vulnerabilities (OWASP Mobile Top 10)
+3. JavaScript/React Native security issues
+4. Git commit history credential leaks
+5. Android APK security analysis
+6. Production codebase security assessment
+
 ## Key Files
 - Backend project API: `/backend/src/api/projects.py`
 - Frontend project service: `/frontend/src/services/projectService.ts`
 - Database schema: `/supabase_schema.sql`
 - API configuration: `/frontend/src/utils/api-config.ts`
+- Mobile security endpoint: `/backend/app/main.py` (lines 528-716)

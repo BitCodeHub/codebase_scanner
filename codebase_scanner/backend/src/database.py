@@ -39,20 +39,8 @@ def get_supabase_client() -> Client:
         logger.info(f"Creating Supabase client for URL: {url}")
         logger.info(f"Using service key: {'***' + key[-10:] if len(key) > 10 else '***'}")
         
-        # Check if we're dealing with the proxy parameter issue
-        try:
-            # Try creating client normally
-            client = create_client(url, key)
-        except TypeError as te:
-            if "proxy" in str(te):
-                logger.warning("Proxy parameter issue detected, trying workaround")
-                # This might happen if there's a version mismatch
-                # Try to create client with explicit parameters
-                from supabase import Client
-                import httpx
-                client = Client(url, key)
-            else:
-                raise
+        # Create client using the most basic approach to avoid proxy parameter issues
+        client = create_client(url, key)
         
         # Test the connection with a simple query
         test_result = client.table("projects").select("id").limit(1).execute()
