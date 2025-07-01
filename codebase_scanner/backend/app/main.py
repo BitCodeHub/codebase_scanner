@@ -21,12 +21,17 @@ app = FastAPI(
 )
 
 # Configure CORS
+cors_origins = os.getenv("CORS_ORIGINS", "").split(",") if os.getenv("CORS_ORIGINS") else []
 origins = [
     "http://localhost:5173",  # Frontend development
     "http://127.0.0.1:5173",
     "https://localhost:5173",
-    os.getenv("FRONTEND_URL", "")  # Production frontend
-]
+] + cors_origins
+
+# Remove empty strings from origins
+origins = [origin.strip() for origin in origins if origin.strip()]
+
+print(f"CORS Origins configured: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
