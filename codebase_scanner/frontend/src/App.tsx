@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { Session } from '@supabase/supabase-js'
-import { runSupabaseDiagnostics, testHardcodedSupabase } from './lib/supabase-diagnostic'
-import { testSupabaseInit } from './lib/test-supabase'
-import { testDirectInit } from './lib/supabase-direct'
+// Diagnostic imports removed - using mock client due to bundling issue
 
 // Components
 import Layout from './components/layout/Layout'
@@ -21,16 +19,9 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Run diagnostics first
-    const runDiagnostics = async () => {
-      console.log('=== Running Supabase Diagnostics ===');
-      await runSupabaseDiagnostics();
-      await testHardcodedSupabase();
-      await testSupabaseInit();
-      testDirectInit();
-      console.log('=== End Diagnostics ===');
-    };
-    runDiagnostics();
+    // Note: Using mock Supabase client due to production bundling issue
+    // The real Supabase client fails to initialize due to headers access error
+    console.log('App: Using mock Supabase client');
     
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: any } }) => {

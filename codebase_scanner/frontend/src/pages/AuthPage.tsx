@@ -140,6 +140,14 @@ export default function AuthPage() {
         <div className="mt-4 text-center text-sm text-gray-600">
           <p>Demo Application - Production Grade Security Scanner</p>
         </div>
+        
+        {/* Mock mode notice */}
+        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <p className="text-sm text-yellow-800 text-center">
+            <strong>Note:</strong> Using mock authentication due to temporary Supabase initialization issue. 
+            Your session will be stored locally.
+          </p>
+        </div>
       </div>
     </div>
   )
