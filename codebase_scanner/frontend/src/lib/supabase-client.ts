@@ -1,5 +1,5 @@
 // Separate file for Supabase client initialization
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from './supabase-wrapper'
 import type { Database } from '../types/database'
 import { runtimeConfig } from '../generated/config'
 
@@ -37,15 +37,18 @@ export function initializeSupabase() {
       keyValid: key.startsWith('eyJ')
     });
     
-    // Create client with minimal options first
-    const client = createClient<Database>(url, key, {
-      auth: {
-        persistSession: true,
-        detectSessionInUrl: true,
-      },
-    });
-    console.log('Supabase client created successfully');
-    return client;
+    // Create client with absolutely minimal setup
+    try {
+      const client = createClient<Database>(url, key);
+      console.log('Supabase client created successfully');
+      return client;
+    } catch (innerError) {
+      console.error('Inner error creating client:', innerError);
+      // Try with empty options object
+      const client = createClient<Database>(url, key, {});
+      console.log('Supabase client created with empty options');
+      return client;
+    }
   } catch (error) {
     console.error('Failed to create Supabase client:', error);
     return null;

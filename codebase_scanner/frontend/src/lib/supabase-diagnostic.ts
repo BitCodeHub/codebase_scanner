@@ -46,20 +46,28 @@ export async function runSupabaseDiagnostics() {
   
   try {
     // Import using ES modules syntax, not require
-    const { createClient } = await import('@supabase/supabase-js');
+    const { createClient } = await import('./supabase-wrapper');
     console.log('✅ createClient function found');
     
     // Try creating with minimal options
     const url = String(testUrl).trim();
     const key = String(testKey).trim();
     console.log('Creating client with URL:', url.substring(0, 40) + '...');
-    const client = createClient(url, key, {
-      auth: {
-        persistSession: true,
-        detectSessionInUrl: true,
-      },
-    });
-    console.log('✅ Client created successfully!', client);
+    
+    // Log the createClient function itself
+    console.log('createClient function:', createClient);
+    console.log('createClient type:', typeof createClient);
+    
+    try {
+      const client = createClient(url, key);
+      console.log('✅ Client created successfully!', client);
+    } catch (innerError: any) {
+      console.error('Error in createClient:', innerError);
+      console.error('Error name:', innerError?.name);
+      console.error('Error message:', innerError?.message);
+      console.error('Error stack:', innerError?.stack);
+      throw innerError;
+    }
     
     console.groupEnd();
     return true;
@@ -81,19 +89,14 @@ export async function testHardcodedSupabase() {
   console.group('🧪 Testing with hardcoded values');
   
   try {
-    const { createClient } = await import('@supabase/supabase-js');
+    const { createClient } = await import('./supabase-wrapper');
     
     // These are test values - not real
     const testUrl = 'https://xyzxyzxyz.supabase.co';
     const testKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.test';
     
     console.log('Creating client with test values...');
-    const client = createClient(testUrl, testKey, {
-      auth: {
-        persistSession: false,
-        detectSessionInUrl: false,
-      },
-    });
+    const client = createClient(testUrl, testKey);
     console.log('✅ Test client created successfully!');
     console.groupEnd();
     return true;
