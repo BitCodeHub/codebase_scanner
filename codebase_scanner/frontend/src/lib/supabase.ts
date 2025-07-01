@@ -1,28 +1,8 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../types/database'
-import { initializeSupabase } from './supabase-client'
+import { supabaseWrapper } from './supabase-wrapper'
 
-// Lazy initialization
-let _supabaseClient: SupabaseClient<Database> | null | undefined;
-
-// Get or create the Supabase client
-function getSupabaseClient() {
-  if (_supabaseClient === undefined) {
-    _supabaseClient = initializeSupabase();
-  }
-  if (!_supabaseClient) {
-    throw new Error('Supabase client failed to initialize');
-  }
-  return _supabaseClient;
-}
-
-// Export a proxy that initializes on first use
-export const supabase = new Proxy({} as any, {
-  get(target, prop) {
-    const client = getSupabaseClient();
-    return client[prop as keyof typeof client];
-  }
-});
+// Export the wrapper directly
+export const supabase = supabaseWrapper;
 
 // Auth helpers
 export const auth = {

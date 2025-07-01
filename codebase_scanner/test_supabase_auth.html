@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Supabase Authentication</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Supabase Authentication Test</h1>
+    <div id="status">Loading...</div>
+    <div id="results"></div>
+    
+    <script>
+        // Your Supabase credentials
+        const SUPABASE_URL = 'https://ylllkgxzrizqlsymkybh.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsbGxrZ3h6cml6cWxzeW1reWJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUxODg0MzIsImV4cCI6MjA1MDc2NDQzMn0.qMPu9HBsJzV4pTIHWANHe-V1dse6Zmy7LPenEy78mVQ';
+        
+        async function testSupabase() {
+            const status = document.getElementById('status');
+            const results = document.getElementById('results');
+            
+            try {
+                // Initialize Supabase client
+                status.innerHTML = '🔄 Initializing Supabase client...';
+                const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                // Test 1: Check if we can reach Supabase
+                status.innerHTML = '🔄 Testing connection...';
+                const { data: healthCheck, error: healthError } = await supabase
+                    .from('projects')
+                    .select('count')
+                    .limit(1);
+                
+                if (healthError && healthError.code !== 'PGRST116') {
+                    results.innerHTML += `<p>❌ Connection Error: ${healthError.message}</p>`;
+                } else {
+                    results.innerHTML += `<p>✅ Successfully connected to Supabase!</p>`;
+                }
+                
+                // Test 2: Try to sign up
+                status.innerHTML = '🔄 Testing authentication...';
+                const testEmail = `test${Date.now()}@example.com`;
+                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                    email: testEmail,
+                    password: 'TestPassword123!'
+                });
+                
+                if (signUpError) {
+                    results.innerHTML += `<p>❌ Sign Up Error: ${signUpError.message}</p>`;
+                } else {
+                    results.innerHTML += `<p>✅ Sign up successful! Check if email confirmation is required.</p>`;
+                    if (signUpData.user) {
+                        results.innerHTML += `<p>User ID: ${signUpData.user.id}</p>`;
+                    }
+                }
+                
+                // Test 3: Check auth settings
+                status.innerHTML = '🔄 Checking auth configuration...';
+                const { data: sessionData } = await supabase.auth.getSession();
+                results.innerHTML += `<p>Session Status: ${sessionData.session ? 'Active' : 'No session'}</p>`;
+                
+                status.innerHTML = '✅ Tests completed!';
+                
+            } catch (error) {
+                status.innerHTML = '❌ Test failed!';
+                results.innerHTML += `<p>❌ Unexpected Error: ${error.message}</p>`;
+                console.error('Full error:', error);
+            }
+        }
+        
+        // Run tests when page loads
+        testSupabase();
+    </script>
+</body>
+</html>

@@ -43,7 +43,9 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           // Remove supabase from manual chunks to avoid bundling issues
-        }
+        },
+        // Preserve dynamic imports
+        inlineDynamicImports: false,
       }
     }
   }
