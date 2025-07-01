@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Frontend-Backend Connection</title>
+</head>
+<body>
+    <h1>Frontend-Backend Connection Test</h1>
+    <button onclick="testConnection()">Test API Connection</button>
+    <button onclick="testScanEndpoint()">Test Scan Endpoint</button>
+    <div id="results"></div>
+
+    <script>
+        async function testConnection() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing connection...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/test', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    results.innerHTML = `<pre style="color: green;">✅ API Connection Success:\n${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    results.innerHTML = `<pre style="color: red;">❌ API Error: ${response.status} ${response.statusText}</pre>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<pre style="color: red;">❌ Connection Error: ${error.message}</pre>`;
+            }
+        }
+        
+        async function testScanEndpoint() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing scan endpoint...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/scans/test-endpoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        project_id: "test-123",
+                        repository_url: "https://github.com/test/repo"
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    results.innerHTML = `<pre style="color: green;">✅ Scan Endpoint Success:\n${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    const errorText = await response.text();
+                    results.innerHTML = `<pre style="color: red;">❌ Scan Error: ${response.status} ${response.statusText}\n${errorText}</pre>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<pre style="color: red;">❌ Scan Connection Error: ${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>

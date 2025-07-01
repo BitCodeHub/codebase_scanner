@@ -28,7 +28,7 @@ export function getApiUrl(): string {
   }
   
   // Development fallback
-  return 'http://localhost:8001'
+  return 'http://localhost:8000'
 }
 
 export function getFullApiUrl(endpoint: string): string {
