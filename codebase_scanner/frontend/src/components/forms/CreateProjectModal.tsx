@@ -54,18 +54,27 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
       debug.detectedApiBase = getApiUrl()
       debug.isProduction = window.location.hostname.includes('onrender.com')
       
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          description: formData.description,
-          repository_url: formData.source_type === 'github' ? formData.github_repo_url : null
-        })
-      })
+      let response;
+      try {
+        response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            description: formData.description,
+            repository_url: formData.source_type === 'github' ? formData.github_repo_url : null
+          })
+        });
+      } catch (fetchError) {
+        // Network or connection error
+        debug.networkError = true;
+        debug.fetchError = fetchError;
+        setDebugInfo(debug);
+        throw new Error('Network error: Unable to connect to the server. Please check your connection and try again.');
+      }
 
       const responseText = await response.text()
       let responseData
@@ -82,14 +91,49 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
       setDebugInfo(debug)
 
       if (!response.ok) {
-        throw new Error(responseData.detail || responseData.error || `Failed to create project: ${response.status}`)
+        // Construct a meaningful error message from the response
+        let errorMessage = `Failed to create project: ${response.status}`;
+        
+        if (responseData) {
+          if (typeof responseData === 'string') {
+            errorMessage = responseData;
+          } else if (responseData.detail) {
+            errorMessage = responseData.detail;
+          } else if (responseData.error) {
+            errorMessage = typeof responseData.error === 'string' 
+              ? responseData.error 
+              : JSON.stringify(responseData.error);
+          } else if (responseData.message) {
+            errorMessage = responseData.message;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       onSuccess()
     } catch (error: any) {
-      setError(error.message)
+      // Handle different error types properly
+      let errorMessage = 'An unexpected error occurred';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object') {
+        // Try to extract meaningful error message from object
+        errorMessage = error.detail || error.error || error.message || JSON.stringify(error);
+      }
+      
+      setError(errorMessage);
+      
       if (!debugInfo) {
-        setDebugInfo({ error: error.message, stack: error.stack })
+        setDebugInfo({ 
+          error: errorMessage, 
+          errorType: error?.constructor?.name || typeof error,
+          fullError: error,
+          stack: error?.stack 
+        });
       }
     } finally {
       setLoading(false)
