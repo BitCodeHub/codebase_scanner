@@ -41,7 +41,7 @@ if (isRender) {
 const config = {
   supabaseUrl: process.env.VITE_SUPABASE_URL || '',
   supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY || '',
-  apiUrl: process.env.VITE_API_URL || 'http://localhost:8000',
+  apiUrl: process.env.VITE_API_URL || (isRender ? 'https://codebase-scanner-backend.onrender.com' : 'http://localhost:8001'),
   environment: process.env.NODE_ENV || 'development',
   buildTime: new Date().toISOString()
 };
