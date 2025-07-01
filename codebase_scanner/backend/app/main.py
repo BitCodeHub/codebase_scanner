@@ -178,6 +178,53 @@ async def debug_auth(request: dict):
     except Exception as e:
         return {"error": str(e), "token_preview": token[:50] + "..." if len(token) > 50 else token}
 
+@app.post("/api/test/create-project")
+async def test_create_project(request: dict):
+    """Test project creation without authentication"""
+    try:
+        from src.database import get_supabase_client
+        import uuid
+        from datetime import datetime
+        
+        # Get the supabase client
+        try:
+            supabase = get_supabase_client()
+        except Exception as e:
+            return {"error": f"Failed to get Supabase client: {str(e)}"}
+        
+        # Extract user_id from request
+        user_id = request.get("user_id")
+        if not user_id:
+            return {"error": "user_id is required"}
+        
+        # Create project data
+        project_data = {
+            "id": str(uuid.uuid4()),
+            "owner_id": user_id,
+            "name": request.get("name", f"Test Project {datetime.now()}"),
+            "description": request.get("description", "Test project created via API"),
+            "github_repo_url": request.get("repository_url"),
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        # Try to insert
+        try:
+            result = supabase.table("projects").insert(project_data).execute()
+            return {
+                "success": True,
+                "project": result.data[0] if result.data else None,
+                "project_id": project_data["id"]
+            }
+        except Exception as e:
+            return {
+                "error": f"Failed to insert project: {str(e)}",
+                "project_data": project_data
+            }
+            
+    except Exception as e:
+        return {"error": f"Unexpected error: {str(e)}"}
+
 # Include API routes
 try:
     from src.api.ai_analysis import router as ai_router

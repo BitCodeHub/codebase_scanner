@@ -5,9 +5,15 @@ import os
 from typing import Optional
 from supabase import create_client, Client
 from functools import lru_cache
-from src.utils.logging import get_logger
+import logging
 
-logger = get_logger(__name__)
+# Use standard logging if custom logger not available
+try:
+    from src.utils.logging import get_logger
+    logger = get_logger(__name__)
+except ImportError:
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
 
 @lru_cache()
 def get_supabase_client() -> Client:
@@ -31,13 +37,14 @@ def get_supabase_client() -> Client:
     
     try:
         logger.info(f"Creating Supabase client for URL: {url}")
+        logger.info(f"Using service key: {'***' + key[-10:] if len(key) > 10 else '***'}")
         client = create_client(url, key)
-        # Test the connection
-        client.table("projects").select("id").limit(1).execute()
-        logger.info("Supabase client created and tested successfully")
+        # Test the connection with a simple query
+        test_result = client.table("projects").select("id").limit(1).execute()
+        logger.info(f"Supabase client created and tested successfully")
         return client
     except Exception as e:
-        logger.error(f"Failed to create Supabase client: {e}")
+        logger.error(f"Failed to create Supabase client: {type(e).__name__}: {str(e)}")
         raise
 
 def get_redis_client():

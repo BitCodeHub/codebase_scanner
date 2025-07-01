@@ -156,6 +156,44 @@ export default function DebugPage() {
     setLoading(false)
   }
 
+  const testDirectProjectCreation = async () => {
+    setLoading(true)
+    try {
+      const user = await supabase.auth.getUser()
+      const userId = user.data.user?.id
+      
+      if (!userId) {
+        setProjectTest({ ...projectTest, directError: 'No user ID' })
+        return
+      }
+
+      // Test direct project creation without auth
+      const response = await fetch(`${runtimeConfig.apiUrl}/api/test/create-project`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          name: 'Direct Test Project ' + new Date().toISOString(),
+          description: 'Testing direct project creation',
+          repository_url: 'https://github.com/test/direct'
+        })
+      })
+
+      const data = await response.json()
+
+      setProjectTest({
+        ...projectTest,
+        directStatus: response.status,
+        directData: data
+      })
+    } catch (error) {
+      setProjectTest({ ...projectTest, directError: error instanceof Error ? error.message : 'Unknown error' })
+    }
+    setLoading(false)
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Debug Dashboard</h1>
@@ -230,6 +268,13 @@ export default function DebugPage() {
             className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
           >
             Test List Projects
+          </button>
+          <button 
+            onClick={testDirectProjectCreation}
+            disabled={loading}
+            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
+          >
+            Test Direct Create (No Auth)
           </button>
         </div>
       </div>

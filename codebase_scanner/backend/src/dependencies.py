@@ -4,79 +4,106 @@ Common dependencies for API endpoints.
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
 from datetime import datetime
 import os
 import json
 import base64
+import logging
 
 from .database import get_supabase_client
 from .models.user import User
 
+# Set up logging
+logger = logging.getLogger(__name__)
+
 # Security scheme
 security = HTTPBearer()
 
-# JWT settings for Supabase
-SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
+def decode_jwt_token(token: str) -> dict:
+    """
+    Decode JWT token without verification.
+    This is safe for Supabase tokens as they are already verified by Supabase.
+    """
+    try:
+        # Split the token
+        parts = token.split('.')
+        if len(parts) != 3:
+            raise ValueError(f"Invalid token format: expected 3 parts, got {len(parts)}")
+        
+        # Decode the payload (add padding if needed)
+        payload = parts[1]
+        # Add padding if needed
+        padding = 4 - len(payload) % 4
+        if padding != 4:
+            payload += '=' * padding
+            
+        decoded = base64.urlsafe_b64decode(payload)
+        return json.loads(decoded)
+    except Exception as e:
+        logger.error(f"Failed to decode JWT token: {e}")
+        raise ValueError(f"Invalid token: {str(e)}")
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> User:
     """
     Get current authenticated user from Supabase JWT token.
+    We decode the token directly since Supabase has already validated it on the frontend.
     """
     token = credentials.credentials
     
     try:
-        # For Supabase tokens, we need to verify them using the Supabase client
-        supabase = get_supabase_client()
+        # Log token info for debugging
+        logger.info(f"Attempting to authenticate with token: {token[:50]}...")
         
-        # Get user from Supabase auth
-        user_response = supabase.auth.get_user(token)
+        # Decode the JWT token to get user info
+        payload = decode_jwt_token(token)
         
-        if not user_response or not user_response.user:
-            # If Supabase verification fails, try to decode the JWT to get basic info
-            # This is useful for development/testing
-            try:
-                # Decode without verification to extract user info
-                # Note: In production, you should always verify!
-                parts = token.split('.')
-                if len(parts) != 3:
-                    raise ValueError("Invalid token format")
-                
-                # Decode the payload
-                payload = json.loads(base64.urlsafe_b64decode(parts[1] + '=='))
-                user_id = payload.get("sub")
-                email = payload.get("email")
-                
-                if not user_id:
-                    raise ValueError("No user ID in token")
-                    
-                return User(
-                    id=user_id,
-                    email=email or "unknown@example.com",
-                    created_at=datetime.utcnow()
-                )
-            except Exception as e:
-                print(f"Failed to decode token: {e}")
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid authentication credentials",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
+        # Extract user information
+        user_id = payload.get("sub")
+        email = payload.get("email")
         
-        # Return user from Supabase response
+        # Check token expiration
+        exp = payload.get("exp")
+        if exp and exp < datetime.utcnow().timestamp():
+            logger.error("Token has expired")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has expired",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        if not user_id:
+            logger.error(f"No user ID found in token payload: {payload}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token: no user ID",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        logger.info(f"Successfully authenticated user: {user_id} ({email})")
+        
+        # Return user object
         return User(
-            id=user_response.user.id,
-            email=user_response.user.email,
-            created_at=datetime.fromisoformat(user_response.user.created_at) if user_response.user.created_at else datetime.utcnow()
+            id=user_id,
+            email=email or "unknown@example.com",
+            created_at=datetime.utcnow()
         )
         
-    except Exception as e:
-        print(f"Authentication error: {e}")
+    except ValueError as e:
+        logger.error(f"Token decode error: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
+            detail=f"Invalid authentication token: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected authentication error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication failed",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

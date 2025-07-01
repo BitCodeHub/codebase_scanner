@@ -41,6 +41,9 @@ async def create_project(
     supabase: Client = Depends(get_supabase_client)
 ):
     """Create a new project."""
+    logger.info(f"Creating project for user: {current_user.id} ({current_user.email})")
+    logger.info(f"Project data received: name={project.name}, description={project.description}, repository_url={project.repository_url}")
+    
     try:
         project_data = {
             "id": str(uuid.uuid4()),
@@ -52,18 +55,28 @@ async def create_project(
             "updated_at": datetime.utcnow().isoformat()
         }
         
+        logger.info(f"Inserting project data: {project_data}")
+        
         result = supabase.table("projects").insert(project_data).execute()
         
-        logger.info(f"Created project: {project_data['id']}", extra={
-            "user_id": current_user.id,
-            "project_name": project.name
-        })
+        if not result.data:
+            logger.error(f"No data returned from insert operation")
+            raise HTTPException(status_code=500, detail="Project creation failed - no data returned")
         
-        return ProjectResponse(**db_project_to_response(result.data[0]))
+        logger.info(f"Project created successfully: {project_data['id']}")
+        logger.info(f"Supabase response: {result.data[0]}")
         
+        response_data = db_project_to_response(result.data[0])
+        logger.info(f"Sending response: {response_data}")
+        
+        return ProjectResponse(**response_data)
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Failed to create project: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create project")
+        logger.error(f"Failed to create project: {type(e).__name__}: {str(e)}")
+        logger.error(f"Full error details: {repr(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create project: {str(e)}")
 
 @router.get("/", response_model=ProjectListResponse)
 async def list_projects(
