@@ -24,6 +24,8 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [scanningProject, setScanningProject] = useState<string | null>(null)
+  const [debugInfo, setDebugInfo] = useState<any>(null)
+  const [showDebug, setShowDebug] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -142,6 +144,48 @@ export default function ProjectsPage() {
     )
   }
 
+  const testDirectCreate = async () => {
+    try {
+      const session = await supabase.auth.getSession()
+      const user = await supabase.auth.getUser()
+      const token = session.data.session?.access_token
+      const userId = user.data.user?.id
+
+      const debugData: any = {
+        timestamp: new Date().toISOString(),
+        hasToken: !!token,
+        hasUserId: !!userId,
+        userId: userId,
+        tokenPreview: token ? token.substring(0, 50) + '...' : 'No token',
+      }
+
+      // Test the direct endpoint
+      if (userId) {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://codebase-scanner-backend.onrender.com'}/api/test/create-project`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            name: 'Debug Test ' + new Date().toISOString(),
+            description: 'Testing direct creation'
+          })
+        })
+
+        const result = await response.json()
+        debugData.directCreateResult = result
+        debugData.directCreateStatus = response.status
+      }
+
+      setDebugInfo(debugData)
+      setShowDebug(true)
+    } catch (error) {
+      setDebugInfo({ error: error instanceof Error ? error.message : 'Unknown error' })
+      setShowDebug(true)
+    }
+  }
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -150,14 +194,35 @@ export default function ProjectsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
           <p className="text-gray-600 mt-2">Manage your security scanning projects</p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="btn-primary flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          New Project
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={testDirectCreate}
+            className="btn-secondary flex items-center"
+          >
+            Debug
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="btn-primary flex items-center"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            New Project
+          </button>
+        </div>
       </div>
+
+      {/* Debug Info */}
+      {showDebug && debugInfo && (
+        <div className="mb-6 p-4 bg-gray-100 rounded-lg">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-semibold">Debug Information</h3>
+            <button onClick={() => setShowDebug(false)} className="text-gray-500 hover:text-gray-700">×</button>
+          </div>
+          <pre className="text-xs overflow-auto max-h-96">
+            {JSON.stringify(debugInfo, null, 2)}
+          </pre>
+        </div>
+      )}
 
       {/* Projects Grid */}
       {projects.length > 0 ? (

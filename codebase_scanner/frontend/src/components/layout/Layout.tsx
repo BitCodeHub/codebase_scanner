@@ -11,7 +11,8 @@ import {
   Activity,
   Bell,
   Menu,
-  X
+  X,
+  Bug
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -27,6 +28,7 @@ export default function Layout({ children }: LayoutProps) {
     { name: 'Projects', href: '/projects', icon: FolderIcon, description: 'Manage your projects' },
     { name: 'Security', href: '/security', icon: ShieldCheckIcon, description: 'Vulnerability reports' },
     { name: 'Activity', href: '/activity', icon: Activity, description: 'Recent scans and logs' },
+    { name: 'Debug', href: '/debug', icon: Bug, description: 'Debug tools' },
   ]
 
   const handleSignOut = async () => {
