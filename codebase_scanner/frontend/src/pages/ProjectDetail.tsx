@@ -18,7 +18,7 @@ import {
   ActivityIcon
 } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
-import { simulateScan, startRepositoryScan } from '../services/scanService'
+import { startRepositoryScan } from '../services/scanService'
 import { getProject } from '../services/projectService'
 
 interface Project {
@@ -159,50 +159,24 @@ export default function ProjectDetail() {
       
       if (!project) throw new Error('Project not loaded')
 
-      // If project has a GitHub repository URL, use repository scan
-      if (project.github_repo_url) {
-        const result = await startRepositoryScan(id!, {
-          repositoryUrl: project.github_repo_url,
-          branch: project.github_default_branch || 'main',
-          scanType: 'comprehensive'
-        })
-        
-        // Navigate to the scan results page
-        navigate(`/scans/${result.scanId}/results`)
-      } else {
-        // For uploaded files, create a simulated scan
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) throw new Error('No user found')
-
-        const { data: scan, error } = await supabase
-          .from('scans')
-          .insert({
-            project_id: Number(id),
-            user_id: user.id,
-            scan_type: 'security',
-            status: 'pending',
-            triggered_by: 'manual',
-            scan_config: {
-              scanType: 'comprehensive',
-              includeTests: true,
-              includeDependencies: true,
-              severityThreshold: 'low'
-            }
-          })
-          .select()
-          .single()
-
-        if (error) throw error
-
-        // Start the scan simulation
-        simulateScan(scan.id, Number(id)).then(() => {
-          // Reload project data to update scan history
-          loadProjectData()
-        })
-
-        // Navigate to the scan results page
-        navigate(`/scans/${scan.id}/results`)
-      }
+      // Use real scanning for all projects
+      const repositoryUrl = project.github_repo_url || 'https://github.com/OWASP/NodeGoat' // Default demo repo
+      
+      const result = await startRepositoryScan(id!, {
+        repositoryUrl: repositoryUrl,
+        branch: project.github_default_branch || 'main',
+        scanType: 'comprehensive'
+      })
+      
+      console.log('Real security scan initiated:', result)
+      
+      // Reload project data to update scan history
+      setTimeout(() => {
+        loadProjectData()
+      }, 1000)
+      
+      // Navigate to the scan results page
+      navigate(`/scans/${result.scanId}/results`)
     } catch (error) {
       console.error('Error creating scan:', error)
       alert(`Failed to start scan: ${error instanceof Error ? error.message : 'Unknown error'}`)

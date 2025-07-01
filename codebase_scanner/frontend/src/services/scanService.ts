@@ -57,28 +57,35 @@ export async function startRepositoryScan(
   projectId: string,
   options: RepositoryScanOptions
 ): Promise<{ scanId: string; message: string }> {
-  const formData = new FormData()
-  formData.append('project_id', projectId)
-  formData.append('repository_url', options.repositoryUrl)
-  formData.append('branch', options.branch || 'main')
-  formData.append('scan_type', options.scanType === 'quick' ? 'QUICK' : 'FULL')
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No user found')
 
-  const session = await supabase.auth.getSession()
-  const token = session.data.session?.access_token
+  const { getFullApiUrl } = await import('../utils/api-config')
 
-  const response = await fetch(`${API_BASE_URL}/api/scans/repository`, {
+  const response = await fetch(getFullApiUrl('/api/scans/repository-simple'), {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`
+      'Content-Type': 'application/json'
     },
-    body: formData
+    body: JSON.stringify({
+      project_id: projectId,
+      repository_url: options.repositoryUrl,
+      branch: options.branch || 'main',
+      scan_type: options.scanType === 'quick' ? 'quick' : 'comprehensive',
+      user_id: user.id
+    })
   })
 
   if (!response.ok) {
-    throw new Error('Failed to start repository scan')
+    throw new Error(`Failed to start repository scan: ${response.status} ${response.statusText}`)
   }
 
   const result = await response.json()
+  
+  if (result.error) {
+    throw new Error(result.error)
+  }
+
   return {
     scanId: result.id,
     message: result.message
