@@ -178,6 +178,35 @@ async def debug_auth(request: dict):
     except Exception as e:
         return {"error": str(e), "token_preview": token[:50] + "..." if len(token) > 50 else token}
 
+@app.get("/api/test/list-projects")
+async def test_list_projects():
+    """Test project listing without authentication"""
+    try:
+        from src.database import get_supabase_client
+        import os
+        from supabase import create_client
+        
+        # Get the supabase client
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
+        
+        if not url or not key:
+            return {"error": "Supabase credentials not configured"}
+            
+        supabase = create_client(url, key)
+        
+        # Get all projects
+        result = supabase.table("projects").select("*").execute()
+        
+        return {
+            "success": True,
+            "total_projects": len(result.data),
+            "projects": result.data
+        }
+        
+    except Exception as e:
+        return {"error": f"Failed to list projects: {str(e)}"}
+
 @app.post("/api/test/create-project")
 async def test_create_project(request: dict):
     """Test project creation without authentication"""

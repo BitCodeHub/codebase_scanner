@@ -88,6 +88,9 @@ async def list_projects(
 ):
     """List user's projects with pagination and search."""
     try:
+        logger.info(f"Listing projects for user: {current_user.id}")
+        logger.info(f"Query params - skip: {skip}, limit: {limit}, search: {search}, active_only: {active_only}")
+        
         # Build query (changed from user_id to owner_id to match schema)
         query = supabase.table("projects").select("*").eq("owner_id", current_user.id)
         
@@ -97,16 +100,28 @@ async def list_projects(
         if search:
             query = query.or_(f"name.ilike.%{search}%,description.ilike.%{search}%")
         
-        # Get total count
-        count_result = query.count()
-        total = count_result.count if hasattr(count_result, 'count') else 0
-        
-        # Get paginated results
+        # Get paginated results first
         results = query.order("created_at", desc=True)\
             .range(skip, skip + limit - 1)\
             .execute()
         
+        logger.info(f"Raw query results: {results.data}")
+        
+        # Get total count - use a separate query for reliability
+        count_query = supabase.table("projects").select("id", count="exact").eq("owner_id", current_user.id)
+        if active_only:
+            count_query = count_query.eq("is_active", True)
+        if search:
+            count_query = count_query.or_(f"name.ilike.%{search}%,description.ilike.%{search}%")
+        
+        count_result = count_query.execute()
+        total = count_result.count if count_result.count is not None else len(results.data)
+        
+        logger.info(f"Total count: {total}")
+        
         projects = [ProjectResponse(**db_project_to_response(project)) for project in results.data]
+        
+        logger.info(f"Mapped projects: {[p.dict() for p in projects]}")
         
         return ProjectListResponse(
             projects=projects,

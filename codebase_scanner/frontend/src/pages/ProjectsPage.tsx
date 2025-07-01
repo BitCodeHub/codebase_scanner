@@ -176,7 +176,9 @@ export default function ProjectsPage() {
       // Test the direct endpoint
       if (userId) {
         const { getFullApiUrl } = await import('../utils/api-config')
-        const response = await fetch(getFullApiUrl('/api/test/create-project'), {
+        
+        // Test project creation
+        const createResponse = await fetch(getFullApiUrl('/api/test/create-project'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -188,9 +190,30 @@ export default function ProjectsPage() {
           })
         })
 
-        const result = await response.json()
-        debugData.directCreateResult = result
-        debugData.directCreateStatus = response.status
+        const createResult = await createResponse.json()
+        debugData.directCreateResult = createResult
+        debugData.directCreateStatus = createResponse.status
+        
+        // Test project listing
+        const listResponse = await fetch(getFullApiUrl('/api/test/list-projects'))
+        const listResult = await listResponse.json()
+        debugData.directListResult = listResult
+        debugData.directListStatus = listResponse.status
+        
+        // Test the actual projects API with authentication
+        try {
+          const projectsResponse = await fetch(getFullApiUrl('/api/projects/'), {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          const projectsResult = await projectsResponse.json()
+          debugData.projectsApiResult = projectsResult
+          debugData.projectsApiStatus = projectsResponse.status
+        } catch (err) {
+          debugData.projectsApiError = err instanceof Error ? err.message : 'Unknown error'
+        }
       }
 
       setDebugInfo(debugData)
