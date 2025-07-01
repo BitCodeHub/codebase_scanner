@@ -180,15 +180,21 @@ async def analyze_all_scan_vulnerabilities(
     Analyze all vulnerabilities in a scan (simplified version without Celery).
     """
     try:
+        # Convert scan_id to integer for BIGSERIAL compatibility
+        try:
+            scan_id_int = int(scan_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid scan ID format")
+        
         # Verify scan ownership
-        scan = supabase.table("scans").select("*").eq("id", scan_id).eq("user_id", current_user.id).single().execute()
+        scan = supabase.table("scans").select("*").eq("id", scan_id_int).eq("user_id", current_user.id).single().execute()
         if not scan.data:
             raise HTTPException(status_code=404, detail="Scan not found")
         
         # Get all vulnerabilities
         vulnerabilities = supabase.table("scan_results")\
             .select("*")\
-            .eq("scan_id", scan_id)\
+            .eq("scan_id", scan_id_int)\
             .execute()
         
         if not vulnerabilities.data:
@@ -211,7 +217,7 @@ async def analyze_all_scan_vulnerabilities(
         # In production, this would trigger background processing
         return {
             "message": f"Analysis queued for {len(unanalyzed)} vulnerabilities",
-            "task_id": f"simple-{scan_id}-{datetime.utcnow().timestamp()}",
+            "taskId": f"simple-{scan_id}-{datetime.utcnow().timestamp()}",
             "scan_id": scan_id,
             "total_vulnerabilities": len(vulnerabilities.data),
             "already_analyzed": len(analyzed_ids),
