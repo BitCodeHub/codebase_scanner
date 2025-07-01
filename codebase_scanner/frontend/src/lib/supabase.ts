@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../types/database'
-import { initializeSupabase, mockSupabase } from './supabase-client'
+import { initializeSupabase } from './supabase-client'
 
 // Lazy initialization
 let _supabaseClient: SupabaseClient<Database> | null | undefined;
@@ -10,7 +10,10 @@ function getSupabaseClient() {
   if (_supabaseClient === undefined) {
     _supabaseClient = initializeSupabase();
   }
-  return _supabaseClient || mockSupabase;
+  if (!_supabaseClient) {
+    throw new Error('Supabase client failed to initialize');
+  }
+  return _supabaseClient;
 }
 
 // Export a proxy that initializes on first use

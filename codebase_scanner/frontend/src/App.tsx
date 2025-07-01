@@ -19,10 +19,6 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Note: Using mock Supabase client due to production bundling issue
-    // The real Supabase client fails to initialize due to headers access error
-    console.log('App: Using mock Supabase client');
-    
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: any } }) => {
       setSession(session)

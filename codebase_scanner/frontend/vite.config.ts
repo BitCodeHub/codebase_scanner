@@ -10,15 +10,25 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
+      '@': path.resolve(__dirname, './src'),
+      // Add specific aliases for problematic modules
+      './runtimeConfig': './runtimeConfig.browser',
     }
   },
   define: {
     global: 'globalThis',
     'process.env': {},
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
   },
   optimizeDeps: {
-    include: ['@supabase/supabase-js'],
+    include: [
+      '@supabase/supabase-js',
+      '@supabase/gotrue-js',
+      '@supabase/postgrest-js',
+      '@supabase/realtime-js',
+      '@supabase/storage-js',
+      '@supabase/functions-js',
+    ],
     esbuildOptions: {
       define: {
         global: 'globalThis'
@@ -27,11 +37,12 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
+    target: 'es2020',
     rollupOptions: {
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'supabase-vendor': ['@supabase/supabase-js'],
+          // Remove supabase from manual chunks to avoid bundling issues
         }
       }
     }

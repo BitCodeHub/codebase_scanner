@@ -11,6 +11,16 @@ if (typeof global === 'undefined') {
   (window as any).global = window;
 }
 
+// Ensure window.global exists (some bundlers check this)
+if (!(window as any).global) {
+  (window as any).global = window;
+}
+
+// Create a proper global Headers if needed
+if (typeof Headers !== 'undefined' && !(window as any).global.Headers) {
+  (window as any).global.Headers = Headers;
+}
+
 // Ensure Headers is available globally
 if (typeof Headers === 'undefined') {
   console.warn('Headers not available, Supabase might not work properly');
