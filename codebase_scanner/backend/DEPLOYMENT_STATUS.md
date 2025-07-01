@@ -2,6 +2,10 @@
 
 ## Recent Changes Deployed
 
+### Uvicorn Startup Fix (Commit: c4c4bffb) - LATEST
+- **Fixed invalid uvicorn option** `--limit-max-requests-jitter` that was causing deployment failure
+- **Deployment should now start successfully** with all memory optimizations intact
+
 ### Memory Optimization (Commit: 76202638)
 - **Reduced workers from 4 to 1** to stay within Render's 512MB free tier limit
 - **Added memory monitoring endpoint** at `/health/memory`
@@ -98,4 +102,5 @@ The environment might still show "development" even with PYTHON_ENV=production s
 ---
 
 **Last Updated**: January 1, 2025  
-**Status**: Rebuilding with memory optimizations
+**Status**: Fixed uvicorn startup error - Rebuilding with corrected configuration  
+**Current Issue**: Resolved - Invalid uvicorn option removed
