@@ -62,7 +62,7 @@ class RepositoryScanner:
                 "user_id": user_id,
                 "project_id": project_id,
                 "status": "pending",
-                "scan_type": "repository",
+                "scan_type": "security",  # Use valid enum value instead of "repository"
                 "repository_url": repo_url,
                 "branch": branch,
                 "config": scan_config or {},
