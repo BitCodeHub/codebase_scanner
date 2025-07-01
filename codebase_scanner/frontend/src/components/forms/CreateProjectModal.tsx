@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { XIcon, UploadIcon, GitBranchIcon } from 'lucide-react'
 import LoadingSpinner from '../ui/LoadingSpinner'
-import { getApiUrl, getFullApiUrl } from '../../utils/api-config'
+import { createProject } from '../../services/projectService'
 
 interface CreateProjectModalProps {
   onClose: () => void
@@ -26,91 +26,20 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
     setError('')
 
     try {
-      const session = await supabase.auth.getSession()
-      const user = await supabase.auth.getUser()
-      const token = session.data.session?.access_token
-      
-      // Debug information
-      const debug: any = {
-        hasToken: !!token,
-        tokenPreview: token ? token.substring(0, 50) + '...' : 'No token',
-        userId: user.data.user?.id,
-        apiUrl: getApiUrl(),
-        requestBody: {
-          name: formData.name,
-          description: formData.description,
-          repository_url: formData.source_type === 'github' ? formData.github_repo_url : null
-        }
-      }
-      
-      if (!token) {
-        setDebugInfo({ ...debug, error: 'No authentication token' })
-        throw new Error('User not authenticated')
-      }
+      console.log('Creating project with data:', {
+        name: formData.name,
+        description: formData.description,
+        repository_url: formData.source_type === 'github' ? formData.github_repo_url : undefined
+      })
 
-      // Use the backend API to create the project
-      const apiUrl = getFullApiUrl('/api/projects/')
-      debug.apiUrl = apiUrl
-      debug.detectedApiBase = getApiUrl()
-      debug.isProduction = window.location.hostname.includes('onrender.com')
-      
-      let response;
-      try {
-        response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            name: formData.name,
-            description: formData.description,
-            repository_url: formData.source_type === 'github' ? formData.github_repo_url : null
-          })
-        });
-      } catch (fetchError) {
-        // Network or connection error
-        debug.networkError = true;
-        debug.fetchError = fetchError;
-        setDebugInfo(debug);
-        throw new Error('Network error: Unable to connect to the server. Please check your connection and try again.');
-      }
+      // Use the projectService to create the project
+      const newProject = await createProject({
+        name: formData.name,
+        description: formData.description,
+        repository_url: formData.source_type === 'github' ? formData.github_repo_url : undefined
+      })
 
-      const responseText = await response.text()
-      let responseData
-      try {
-        responseData = JSON.parse(responseText)
-      } catch {
-        responseData = { rawResponse: responseText }
-      }
-
-      debug.responseStatus = response.status
-      debug.responseHeaders = Object.fromEntries(response.headers.entries())
-      debug.responseData = responseData
-
-      setDebugInfo(debug)
-
-      if (!response.ok) {
-        // Construct a meaningful error message from the response
-        let errorMessage = `Failed to create project: ${response.status}`;
-        
-        if (responseData) {
-          if (typeof responseData === 'string') {
-            errorMessage = responseData;
-          } else if (responseData.detail) {
-            errorMessage = responseData.detail;
-          } else if (responseData.error) {
-            errorMessage = typeof responseData.error === 'string' 
-              ? responseData.error 
-              : JSON.stringify(responseData.error);
-          } else if (responseData.message) {
-            errorMessage = responseData.message;
-          }
-        }
-        
-        throw new Error(errorMessage);
-      }
-
+      console.log('Project created successfully:', newProject)
       onSuccess()
     } catch (error: any) {
       // Handle different error types properly
@@ -125,16 +54,15 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
         errorMessage = error.detail || error.error || error.message || JSON.stringify(error);
       }
       
+      console.error('Error creating project:', error)
       setError(errorMessage);
       
-      if (!debugInfo) {
-        setDebugInfo({ 
-          error: errorMessage, 
-          errorType: error?.constructor?.name || typeof error,
-          fullError: error,
-          stack: error?.stack 
-        });
-      }
+      setDebugInfo({ 
+        error: errorMessage, 
+        errorType: error?.constructor?.name || typeof error,
+        fullError: error,
+        stack: error?.stack 
+      });
     } finally {
       setLoading(false)
     }

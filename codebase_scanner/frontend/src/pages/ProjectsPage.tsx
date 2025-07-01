@@ -34,18 +34,25 @@ export default function ProjectsPage() {
 
   const loadProjects = async () => {
     try {
+      console.log('Loading projects...')
       const response = await listProjects(0, 50)
+      console.log('Projects response:', response)
       
       // For now, we'll fetch scan counts separately
       // In a production app, this would be included in the API response
       const projectsWithStats = await Promise.all(
         response.projects.map(async (project) => {
           try {
-            const { data: scans } = await supabase
+            // Convert project.id to number for Supabase query since projects table uses BIGSERIAL
+            const { data: scans, error: scanError } = await supabase
               .from('scans')
               .select('id, status, created_at, total_issues')
-              .eq('project_id', project.id)
+              .eq('project_id', parseInt(project.id))
               .order('created_at', { ascending: false })
+            
+            if (scanError) {
+              console.error(`Error loading scans for project ${project.id}:`, scanError)
+            }
             
             return {
               ...project,
@@ -63,17 +70,24 @@ export default function ProjectsPage() {
         })
       )
 
+      console.log('Projects with stats:', projectsWithStats)
       setProjects(projectsWithStats)
     } catch (error) {
       console.error('Error loading projects:', error)
+      setDebugInfo({ loadProjectsError: error })
+      setShowDebug(true)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleProjectCreated = () => {
+  const handleProjectCreated = async () => {
     setShowCreateModal(false)
-    loadProjects()
+    // Add a small delay to ensure database write is complete
+    setTimeout(() => {
+      console.log('Refreshing projects after creation...')
+      loadProjects()
+    }, 500)
   }
 
   const handleScan = async (projectId: string) => {
@@ -201,6 +215,15 @@ export default function ProjectsPage() {
             className="btn-secondary flex items-center"
           >
             Debug
+          </button>
+          <button
+            onClick={() => {
+              console.log('Manual refresh triggered')
+              loadProjects()
+            }}
+            className="btn-secondary flex items-center"
+          >
+            Refresh
           </button>
           <button
             onClick={() => setShowCreateModal(true)}

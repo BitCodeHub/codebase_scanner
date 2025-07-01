@@ -81,6 +81,8 @@ export async function listProjects(skip = 0, limit = 20, search?: string, active
     params.append('search', search)
   }
   
+  console.log('Fetching projects from:', `${API_BASE_URL}/api/projects/?${params}`)
+  
   const response = await fetch(`${API_BASE_URL}/api/projects/?${params}`, {
     method: 'GET',
     headers: {
@@ -90,10 +92,13 @@ export async function listProjects(skip = 0, limit = 20, search?: string, active
 
   if (!response.ok) {
     const errorData = await response.json()
+    console.error('Failed to list projects:', errorData)
     throw new Error(errorData.detail || 'Failed to list projects')
   }
 
-  return response.json()
+  const data = await response.json()
+  console.log('Projects API response:', data)
+  return data
 }
 
 export async function getProject(projectId: string): Promise<Project> {
