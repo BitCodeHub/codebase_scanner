@@ -178,7 +178,7 @@ export async function getVulnerabilityAnalysis(vulnerabilityId: string): Promise
   return await response.json()
 }
 
-export async function simulateScan(scanId: number, projectId: number) {
+export async function simulateScan(scanId: number | string, projectId: number | string) {
   try {
     // Update scan status to running
     await supabase
@@ -187,7 +187,7 @@ export async function simulateScan(scanId: number, projectId: number) {
         status: 'running',
         started_at: new Date().toISOString()
       })
-      .eq('id', scanId)
+      .eq('id', Number(scanId))
 
     // Simulate scanning delay
     await new Promise(resolve => setTimeout(resolve, 3000))
@@ -195,7 +195,7 @@ export async function simulateScan(scanId: number, projectId: number) {
     // Generate mock vulnerabilities for demo
     const mockVulnerabilities = [
       {
-        scan_id: scanId,
+        scan_id: Number(scanId),
         rule_id: 'CWE-798',
         title: 'Hardcoded Database Credentials',
         description: 'Database password is hardcoded in the configuration file',
@@ -211,7 +211,7 @@ export async function simulateScan(scanId: number, projectId: number) {
         cvss_score: 9.8
       },
       {
-        scan_id: scanId,
+        scan_id: Number(scanId),
         rule_id: 'CWE-89',
         title: 'SQL Injection Vulnerability',
         description: 'User input is directly concatenated into SQL query',
@@ -227,7 +227,7 @@ export async function simulateScan(scanId: number, projectId: number) {
         cvss_score: 8.9
       },
       {
-        scan_id: scanId,
+        scan_id: Number(scanId),
         rule_id: 'CWE-79',
         title: 'Cross-Site Scripting (XSS)',
         description: 'User input is rendered without proper sanitization',
@@ -271,7 +271,7 @@ export async function simulateScan(scanId: number, projectId: number) {
         medium_issues,
         low_issues
       })
-      .eq('id', scanId)
+      .eq('id', Number(scanId))
 
     return { success: true }
   } catch (error) {
@@ -284,7 +284,7 @@ export async function simulateScan(scanId: number, projectId: number) {
         status: 'failed',
         error_message: error instanceof Error ? error.message : 'Unknown error occurred'
       })
-      .eq('id', scanId)
+      .eq('id', Number(scanId))
 
     return { success: false, error }
   }
