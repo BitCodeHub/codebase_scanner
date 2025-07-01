@@ -1,8 +1,9 @@
 import { createClient as originalCreateClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '../types/database'
 
 // Wrapper around createClient to handle initialization issues
-export function createClient(url: string, key: string, options?: any): SupabaseClient {
+export function createClient<T = Database>(url: string, key: string, options?: any): SupabaseClient<T> {
   // Ensure all globals are available
   const requiredGlobals = {
     Headers: globalThis.Headers || (window as any).Headers,
@@ -33,10 +34,10 @@ export function createClient(url: string, key: string, options?: any): SupabaseC
   try {
     // Try creating with provided options
     if (options) {
-      return originalCreateClient(url, key, options);
+      return originalCreateClient<T>(url, key, options);
     }
     // Try without options
-    return originalCreateClient(url, key);
+    return originalCreateClient<T>(url, key);
   } catch (error: any) {
     console.error('Failed to create Supabase client:', error);
     

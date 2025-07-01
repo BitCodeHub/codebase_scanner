@@ -39,13 +39,13 @@ export function initializeSupabase() {
     
     // Create client with absolutely minimal setup
     try {
-      const client = createClient<Database>(url, key);
+      const client = createClient(url, key);
       console.log('Supabase client created successfully');
       return client;
     } catch (innerError) {
       console.error('Inner error creating client:', innerError);
       // Try with empty options object
-      const client = createClient<Database>(url, key, {});
+      const client = createClient(url, key, {});
       console.log('Supabase client created with empty options');
       return client;
     }
