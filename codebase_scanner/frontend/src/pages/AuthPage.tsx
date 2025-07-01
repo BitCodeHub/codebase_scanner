@@ -20,12 +20,20 @@ export default function AuthPage() {
       const supabase = await getSupabase()
       
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
         })
-        if (error) throw error
-        setMessage('Check your email for the confirmation link!')
+        if (signUpError) throw signUpError
+        
+        // Automatically sign in after successful registration
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        if (signInError) throw signInError
+        
+        setMessage('Account created successfully!')
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -102,7 +110,7 @@ export default function AuthPage() {
 
             {message && (
               <div className={`p-3 rounded-md text-sm ${
-                message.includes('Check your email') 
+                message.includes('successfully') || message.includes('Check your email')
                   ? 'bg-green-50 text-green-700' 
                   : 'bg-red-50 text-red-700'
               }`}>
