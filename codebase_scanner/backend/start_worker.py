@@ -3,12 +3,26 @@
 import os
 import sys
 import subprocess
+import redis
 
 # Debug information
 print("=== WORKER STARTUP DEBUG ===", file=sys.stderr)
 print(f"Current directory: {os.getcwd()}", file=sys.stderr)
 print(f"REDIS_URL from env: {os.getenv('REDIS_URL', 'NOT SET')}", file=sys.stderr)
 print(f"Directory contents: {os.listdir('.')}", file=sys.stderr)
+
+# Test Redis connection first
+redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+if redis_url and not any(redis_url.endswith(f'/{i}') for i in range(16)):
+    redis_url = redis_url.rstrip('/') + '/0'
+
+print(f"Testing Redis connection to: {redis_url}", file=sys.stderr)
+try:
+    r = redis.from_url(redis_url)
+    r.ping()
+    print("✅ Redis connection test successful!", file=sys.stderr)
+except Exception as e:
+    print(f"❌ Redis connection test failed: {e}", file=sys.stderr)
 
 # Add current directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
