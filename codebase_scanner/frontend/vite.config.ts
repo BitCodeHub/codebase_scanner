@@ -16,6 +16,9 @@ export default defineConfig({
   define: {
     global: 'globalThis',
   },
+  optimizeDeps: {
+    include: ['@supabase/supabase-js'],
+  },
   build: {
     sourcemap: true,
     rollupOptions: {

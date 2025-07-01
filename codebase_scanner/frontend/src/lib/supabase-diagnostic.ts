@@ -53,7 +53,12 @@ export async function runSupabaseDiagnostics() {
     const url = String(testUrl).trim();
     const key = String(testKey).trim();
     console.log('Creating client with URL:', url.substring(0, 40) + '...');
-    const client = createClient(url, key);
+    const client = createClient(url, key, {
+      auth: {
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    });
     console.log('✅ Client created successfully!', client);
     
     console.groupEnd();
@@ -83,7 +88,12 @@ export async function testHardcodedSupabase() {
     const testKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.test';
     
     console.log('Creating client with test values...');
-    const client = createClient(testUrl, testKey);
+    const client = createClient(testUrl, testKey, {
+      auth: {
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    });
     console.log('✅ Test client created successfully!');
     console.groupEnd();
     return true;

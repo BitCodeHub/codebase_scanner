@@ -38,7 +38,12 @@ export function initializeSupabase() {
     });
     
     // Create client with minimal options first
-    const client = createClient<Database>(url, key);
+    const client = createClient<Database>(url, key, {
+      auth: {
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    });
     console.log('Supabase client created successfully');
     return client;
   } catch (error) {
