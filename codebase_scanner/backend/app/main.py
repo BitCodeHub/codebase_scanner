@@ -267,8 +267,8 @@ async def test_scanner_tools():
         
         # Test TruffleHog (secrets detection)
         try:
-            # Try TruffleHog v3 first (preferred)
-            result = subprocess.run(['/opt/homebrew/bin/trufflehog', '--version'], capture_output=True, text=True, timeout=10)
+            # Try TruffleHog v3 in standard Linux location first
+            result = subprocess.run(['/usr/local/bin/trufflehog', '--version'], capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
                 # TruffleHog v3 outputs version to stderr
                 version_output = result.stderr.strip() if result.stderr else result.stdout.strip()

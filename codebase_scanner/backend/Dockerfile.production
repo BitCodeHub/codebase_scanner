@@ -75,8 +75,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create necessary directories with correct permissions
-RUN mkdir -p /app/logs /app/temp /app/uploads && \
-    chown -R appuser:appuser /app
+RUN mkdir -p /app/logs /app/temp /app/uploads /home/appuser/.semgrep && \
+    chown -R appuser:appuser /app /home/appuser
 
 # Scripts directory will be created by the app if needed
 
