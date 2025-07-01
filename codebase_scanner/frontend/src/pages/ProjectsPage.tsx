@@ -136,15 +136,13 @@ export default function ProjectsPage() {
 
       console.log('Real scan initiated:', scanResult)
 
-      // Start the scan simulation for now (will be replaced with real scanning once tools are installed)
-      import('../services/scanService').then(({ simulateScan }) => {
-        simulateScan(scanResult.id, projectId).then(() => {
-          console.log('Scan completed')
-          loadProjects()
-        }).catch(err => {
-          console.error('Scan failed:', err)
-        })
-      })
+      // Real scanning is now handled by the backend automatically
+      console.log('Backend will process the real security scan using Semgrep, Bandit, Safety, and Gitleaks')
+      
+      // Refresh project list to show scan in progress
+      setTimeout(() => {
+        loadProjects()
+      }, 1000)
 
       // Navigate to the scan results page
       navigate(`/scans/${scanResult.id}/results`)

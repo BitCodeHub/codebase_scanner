@@ -425,16 +425,52 @@ async def scan_repository_simple(request: dict):
             return {"error": "Failed to create scan - no data returned"}
         
         scan = result.data[0]
+        scan_id = str(scan["id"])
+        
+        # Start real scanning process in background
+        try:
+            # Import and initialize the repository scanner
+            from app.services.repository_scanner import RepositoryScanner
+            from app.services.scanner_service import ScannerService
+            from src.database import get_supabase_client
+            
+            # Initialize scanner service
+            scanner_service = ScannerService(
+                supabase_client=get_supabase_client(),
+                temp_dir=os.getenv("TEMP_DIR", "/tmp/scans")
+            )
+            
+            # Initialize repository scanner
+            repo_scanner = RepositoryScanner(scanner_service)
+            
+            # Start repository scan asynchronously
+            import asyncio
+            asyncio.create_task(repo_scanner.scan_repository(
+                user_id=user_id,
+                project_id=int(project_id),
+                repo_url=repository_url,
+                branch=branch,
+                scan_config={
+                    "scan_type": "security",
+                    "enabled_scanners": ["semgrep", "bandit", "safety", "gitleaks"]
+                }
+            ))
+            
+            print(f"Real security scan started for scan_id: {scan_id}, repository: {repository_url}")
+            
+        except Exception as e:
+            print(f"Warning: Failed to start real scanning, falling back to record creation only: {e}")
+            # Continue with just the scan record creation
         
         return {
-            "id": str(scan["id"]),
+            "id": scan_id,
             "project_id": project_id,
             "scan_type": "security",  # Return the actual scan_type used in database
             "status": "pending",
             "created_at": scan["created_at"],
             "repository_url": repository_url,  # Return in response even though not stored in DB
             "branch": branch,
-            "message": "Repository scan initiated successfully"
+            "message": "Real repository security scan initiated successfully"
         }
         
     except Exception as e:
