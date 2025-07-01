@@ -73,6 +73,28 @@ async def health_check():
         "timestamp": "2024-12-29"
     }
 
+@app.get("/health/memory")
+async def memory_status():
+    """Monitor memory usage"""
+    try:
+        import psutil
+        process = psutil.Process(os.getpid())
+        memory_info = process.memory_info()
+        vm = psutil.virtual_memory()
+        
+        return {
+            "status": "healthy",
+            "process_memory_mb": round(memory_info.rss / 1024 / 1024, 2),
+            "process_memory_percent": round(process.memory_percent(), 2),
+            "system_memory_percent": vm.percent,
+            "available_memory_mb": round(vm.available / 1024 / 1024, 2),
+            "worker_count": int(os.getenv("WORKERS", "1")),
+            "environment": os.getenv("PYTHON_ENV", "development"),
+            "warning": "Running with reduced workers for memory efficiency"
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/api/test")
 async def test_endpoint():
     """Test endpoint to verify API is working"""

@@ -1,99 +1,81 @@
-# Production Dockerfile for Codebase Scanner Backend
-# This version includes ALL security tools for comprehensive scanning
+# Memory-optimized Production Dockerfile for Codebase Scanner Backend
+# Designed for Render's 512MB free tier
 FROM python:3.11-slim AS base
 
-# Set environment variables
+# Set environment variables for memory optimization
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONHASHSEED=random \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONMALLOC=malloc \
+    MALLOC_ARENA_MAX=2 \
     LOG_DIR=/app/logs \
     TEMP_DIR=/app/temp \
-    PYTHON_ENV=production
+    # Limit Python's memory usage
+    PYTHONOPTIMIZE=2 \
+    # Disable garbage collection debugging
+    PYTHONGC=0
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install only essential system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
-    wget \
-    build-essential \
     libmagic1 \
     nodejs \
     npm \
-    default-jre \
-    unzip \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/* \
+    && rm -rf /var/tmp/*
 
-# Install ALL Python security tools with correct versions
-RUN pip install \
-    semgrep==1.127.0 \
-    bandit==1.8.0 \
-    safety==3.5.0 \
-    detect-secrets==1.5.0
-
-# Install Gitleaks v8.27.2 (matching dev)
-RUN wget https://github.com/gitleaks/gitleaks/releases/download/v8.27.2/gitleaks_8.27.2_linux_x64.tar.gz \
-    && tar -xzf gitleaks_8.27.2_linux_x64.tar.gz \
-    && mv gitleaks /usr/local/bin/ \
-    && chmod +x /usr/local/bin/gitleaks \
-    && rm gitleaks_8.27.2_linux_x64.tar.gz
-
-# Install TruffleHog v3.89.2 (matching dev)
-RUN wget https://github.com/trufflesecurity/trufflehog/releases/download/v3.89.2/trufflehog_3.89.2_linux_amd64.tar.gz \
-    && tar -xzf trufflehog_3.89.2_linux_amd64.tar.gz \
-    && mv trufflehog /usr/local/bin/ \
-    && chmod +x /usr/local/bin/trufflehog \
-    && rm trufflehog_3.89.2_linux_amd64.tar.gz
-
-# Install Retire.js v5.2.7 (matching dev)
-RUN npm install -g retire@5.2.7
-
-# Install JADX v1.5.2 for APK analysis
-RUN wget https://github.com/skylot/jadx/releases/download/v1.5.2/jadx-1.5.2.zip \
-    && unzip jadx-1.5.2.zip -d /opt/jadx \
-    && chmod +x /opt/jadx/bin/jadx \
-    && ln -s /opt/jadx/bin/jadx /usr/local/bin/jadx \
-    && rm jadx-1.5.2.zip
-
-# Install APKLeaks v2.6.3
-RUN pip install apkleaks==2.6.3
-
-# Install QARK v4.0.0
-RUN pip install qark==4.0.0
-
-# Create app user and group
+# Create app user early
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 # Set work directory
 WORKDIR /app
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies in stages to minimize memory usage
+COPY requirements.production.txt .
+
+# Install core dependencies first
+RUN pip install --no-cache-dir --no-compile \
+    fastapi==0.104.1 \
+    uvicorn[standard]==0.24.0.post1 \
+    gunicorn==21.2.0 \
+    python-multipart==0.0.6 \
+    aiofiles==23.2.1 \
+    supabase==2.7.4 \
+    python-dotenv==1.0.1 \
+    anthropic==0.40.0 \
+    GitPython==3.1.43 \
+    python-magic==0.4.27 \
+    structlog==23.2.0 \
+    psutil==6.1.0
+
+# Install security tools separately to avoid memory spikes
+RUN pip install --no-cache-dir --no-compile semgrep==1.127.0
+RUN pip install --no-cache-dir --no-compile bandit==1.8.0
+RUN pip install --no-cache-dir --no-compile safety==3.5.0
+RUN pip install --no-cache-dir --no-compile detect-secrets==1.5.0
+
+# Install GitLeaks with minimal footprint
+RUN curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.0/gitleaks_8.18.0_linux_x64.tar.gz | tar -xz -C /usr/local/bin gitleaks && \
+    chmod +x /usr/local/bin/gitleaks
 
 # Copy application code
-COPY . .
+COPY app /app/app
+COPY .env.example /app/.env.example
+COPY gunicorn.conf.py /app/gunicorn.conf.py
 
-# Create necessary directories with correct permissions
-RUN mkdir -p /app/logs /app/temp /app/uploads /home/appuser/.semgrep && \
-    chown -R appuser:appuser /app /home/appuser
+# Create necessary directories with minimal permissions
+RUN mkdir -p /app/logs /app/temp /app/uploads && \
+    chown -R appuser:appuser /app && \
+    chmod 755 /app/logs /app/temp /app/uploads
 
-# Scripts directory will be created by the app if needed
-
-# Create a tool verification script
-RUN echo '#!/bin/bash\n\
-echo "=== Security Tools Verification ==="\n\
-echo "Semgrep: $(semgrep --version 2>/dev/null || echo "NOT FOUND")"\n\
-echo "Bandit: $(bandit --version 2>&1 | head -1 || echo "NOT FOUND")"\n\
-echo "Safety: $(safety --version 2>/dev/null || echo "NOT FOUND")"\n\
-echo "Gitleaks: $(gitleaks version 2>/dev/null || echo "NOT FOUND")"\n\
-echo "TruffleHog: $(trufflehog --version 2>/dev/null || echo "NOT FOUND")"\n\
-echo "detect-secrets: $(detect-secrets --version 2>/dev/null || echo "NOT FOUND")"\n\
-echo "Retire.js: $(retire --version 2>/dev/null || echo "NOT FOUND")"\n\
-echo "JADX: $(jadx --version 2>/dev/null | head -1 || echo "NOT FOUND")"\n\
-echo "APKLeaks: $(apkleaks --version 2>/dev/null || echo "NOT FOUND")"\n\
-echo "QARK: $(qark --version 2>/dev/null || echo "NOT FOUND")"\n\
-echo "=================================="\n' > /app/verify_tools.sh && chmod +x /app/verify_tools.sh
+# Copy startup script
+COPY scripts/start-production.sh /app/start.sh
+RUN chmod +x /app/start.sh
 
 # Switch to non-root user
 USER appuser
@@ -101,9 +83,9 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# Health check with longer intervals to reduce overhead
+HEALTHCHECK --interval=60s --timeout=30s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Start command with production settings
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${WORKERS:-4} --log-level ${LOG_LEVEL:-info}"]
+# Use the memory-optimized startup script
+CMD ["/app/start.sh"]

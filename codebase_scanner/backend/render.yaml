@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: codebase-scanner-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile.production
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: WORKERS
+        value: 1
+      - key: LOG_LEVEL
+        value: warning
+      - key: PYTHONOPTIMIZE
+        value: 2
+      - key: MALLOC_ARENA_MAX
+        value: 2
+      - key: WEB_CONCURRENCY
+        value: 1
+      - key: UVICORN_WORKERS
+        value: 1
+      - key: SEMGREP_MAX_MEMORY
+        value: 256
+      - key: BANDIT_MAX_MEMORY
+        value: 128
+      # Add your other environment variables here
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ENVIRONMENT
+        value: production
+    healthCheckPath: /health
+    # Free tier specific settings
+    numInstances: 1
+    scaling:
+      minInstances: 1
+      maxInstances: 1
