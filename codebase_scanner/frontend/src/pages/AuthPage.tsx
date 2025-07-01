@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getSupabase } from '../lib/supabase-init'
+import { getSupabase } from '../lib/supabase-safe'
 import { ShieldCheckIcon, EyeIcon, EyeOffIcon } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 

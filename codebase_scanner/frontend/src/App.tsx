@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { subscribeToAuthState } from './lib/supabase-init'
+import { subscribeToAuthState } from './lib/supabase-safe'
 import { Session } from '@supabase/supabase-js'
 
 // Components
