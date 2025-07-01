@@ -183,7 +183,6 @@ async def test_create_project(request: dict):
     """Test project creation without authentication"""
     try:
         from src.database import get_supabase_client
-        import uuid
         from datetime import datetime
         
         # Get the supabase client
@@ -209,7 +208,7 @@ async def test_create_project(request: dict):
         
         # Create project data
         project_data = {
-            "id": str(uuid.uuid4()),
+            # Don't set id - let database auto-generate it with BIGSERIAL
             "owner_id": user_id,
             "name": request.get("name", f"Test Project {datetime.now()}"),
             "description": request.get("description", "Test project created via API"),
@@ -224,7 +223,7 @@ async def test_create_project(request: dict):
             return {
                 "success": True,
                 "project": result.data[0] if result.data else None,
-                "project_id": project_data["id"]
+                "project_id": result.data[0]["id"] if result.data else None
             }
         except Exception as e:
             return {

@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
 from supabase import Client
-import uuid
 
 from src.database import get_supabase_client
 from src.dependencies import get_current_user
@@ -22,7 +21,7 @@ logger = get_logger(__name__)
 def db_project_to_response(db_project: dict) -> dict:
     """Map database project fields to API response fields."""
     return {
-        "id": db_project["id"],
+        "id": str(db_project["id"]),  # Convert bigint to string
         "user_id": db_project["owner_id"],  # Map owner_id to user_id
         "name": db_project["name"],
         "description": db_project.get("description"),
@@ -46,7 +45,7 @@ async def create_project(
     
     try:
         project_data = {
-            "id": str(uuid.uuid4()),
+            # Don't set id - let database auto-generate it with BIGSERIAL
             "owner_id": current_user.id,  # Changed from user_id to owner_id to match schema
             "name": project.name,
             "description": project.description,
@@ -63,7 +62,7 @@ async def create_project(
             logger.error(f"No data returned from insert operation")
             raise HTTPException(status_code=500, detail="Project creation failed - no data returned")
         
-        logger.info(f"Project created successfully: {project_data['id']}")
+        logger.info(f"Project created successfully: {result.data[0]['id']}")
         logger.info(f"Supabase response: {result.data[0]}")
         
         response_data = db_project_to_response(result.data[0])
