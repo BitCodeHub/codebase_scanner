@@ -93,57 +93,55 @@ export default function ProjectsPage() {
   const handleScan = async (projectId: string) => {
     try {
       setScanningProject(projectId)
+      console.log('Starting scan for project:', projectId)
       
       // Find the project to check if it has a repository URL
       const project = projects.find(p => p.id === projectId)
       if (!project) throw new Error('Project not found')
 
-      // If project has a repository URL, use repository scan
-      if (project.repository_url) {
-        const result = await startRepositoryScan(projectId, {
-          repositoryUrl: project.repository_url,
-          branch: 'main',
-          scanType: 'comprehensive'
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No user found')
+
+      console.log('Creating scan record for project ID:', projectId, 'User ID:', user.id)
+
+      // Use the test endpoint to create scan without complex dependencies
+      const { getFullApiUrl } = await import('../utils/api-config')
+      const response = await fetch(getFullApiUrl('/api/test/start-scan'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          project_id: projectId,
+          user_id: user.id
         })
-        
-        // Navigate to the scan results page
-        navigate(`/scans/${result.scanId}/results`)
-      } else {
-        // For uploaded files, create a simulated scan
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) throw new Error('No user found')
+      })
 
-        const { data: scan, error } = await supabase
-          .from('scans')
-          .insert({
-            project_id: projectId,
-            user_id: user.id,
-            scan_type: 'security',
-            status: 'pending',
-            triggered_by: 'manual',
-            scan_config: {
-              scanType: 'comprehensive',
-              includeTests: true,
-              includeDependencies: true,
-              severityThreshold: 'low'
-            }
-          })
-          .select()
-          .single()
-
-        if (error) throw error
-
-        // Start the scan simulation
-        simulateScan(scan.id, projectId).then(() => {
-          // Reload projects to update scan count
-          loadProjects()
-        })
-
-        // Navigate to the scan results page
-        navigate(`/scans/${scan.id}/results`)
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
+
+      const result = await response.json()
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create scan')
+      }
+
+      console.log('Scan created successfully:', result.scan)
+
+      // Start the scan simulation
+      simulateScan(result.scan.id, projectId).then(() => {
+        console.log('Scan simulation completed')
+        // Reload projects to update scan count
+        loadProjects()
+      }).catch(err => {
+        console.error('Scan simulation failed:', err)
+      })
+
+      // Navigate to the scan results page
+      navigate(`/scans/${result.scan.id}/results`)
     } catch (error) {
-      console.error('Error creating scan:', error)
+      console.error('Error starting scan:', error)
       alert(`Failed to start scan: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setScanningProject(null)

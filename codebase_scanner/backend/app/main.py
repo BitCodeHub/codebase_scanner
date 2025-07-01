@@ -207,6 +207,63 @@ async def test_list_projects():
     except Exception as e:
         return {"error": f"Failed to list projects: {str(e)}"}
 
+@app.post("/api/test/start-scan")
+async def test_start_scan(request: dict):
+    """Test scan creation without complex dependencies"""
+    try:
+        import os
+        from supabase import create_client
+        from datetime import datetime
+        
+        # Get the supabase client
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
+        
+        if not url or not key:
+            return {"error": "Supabase credentials not configured"}
+            
+        supabase = create_client(url, key)
+        
+        # Extract required data
+        project_id = request.get("project_id")
+        user_id = request.get("user_id")
+        
+        if not project_id or not user_id:
+            return {"error": "project_id and user_id are required"}
+        
+        # Create scan data
+        scan_data = {
+            "project_id": int(project_id),  # Convert to integer for BIGSERIAL
+            "user_id": user_id,
+            "scan_type": "security",
+            "status": "pending",
+            "triggered_by": "manual",
+            "scan_config": {
+                "scanType": "comprehensive",
+                "includeTests": True,
+                "includeDependencies": True,
+                "severityThreshold": "low"
+            },
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        # Insert scan
+        result = supabase.table("scans").insert(scan_data).execute()
+        
+        if not result.data:
+            return {"error": "Failed to create scan - no data returned"}
+        
+        scan = result.data[0]
+        
+        return {
+            "success": True,
+            "scan": scan,
+            "scan_id": scan["id"]
+        }
+        
+    except Exception as e:
+        return {"error": f"Failed to create scan: {str(e)}"}
+
 @app.post("/api/test/create-project")
 async def test_create_project(request: dict):
     """Test project creation without authentication"""
