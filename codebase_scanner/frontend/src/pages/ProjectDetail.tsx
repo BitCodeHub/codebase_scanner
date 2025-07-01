@@ -18,7 +18,8 @@ import {
   ActivityIcon
 } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
-import { simulateScan } from '../services/scanService'
+import { simulateScan, startRepositoryScan } from '../services/scanService'
+import { getProject } from '../services/projectService'
 
 interface Project {
   id: number
@@ -156,42 +157,55 @@ export default function ProjectDetail() {
     try {
       setScanningProject(true)
       
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('No user found')
+      if (!project) throw new Error('Project not loaded')
 
-      // Create a new scan record
-      const { data: scan, error } = await supabase
-        .from('scans')
-        .insert({
-          project_id: Number(id),
-          user_id: user.id,
-          scan_type: 'security',
-          status: 'pending',
-          triggered_by: 'manual',
-          scan_config: {
-            scanType: 'comprehensive',
-            includeTests: true,
-            includeDependencies: true,
-            severityThreshold: 'low'
-          }
+      // If project has a GitHub repository URL, use repository scan
+      if (project.github_repo_url) {
+        const result = await startRepositoryScan(id!, {
+          repositoryUrl: project.github_repo_url,
+          branch: project.github_default_branch || 'main',
+          scanType: 'comprehensive'
         })
-        .select()
-        .single()
+        
+        // Navigate to the scan results page
+        navigate(`/scans/${result.scanId}/results`)
+      } else {
+        // For uploaded files, create a simulated scan
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error('No user found')
 
-      if (error) throw error
+        const { data: scan, error } = await supabase
+          .from('scans')
+          .insert({
+            project_id: Number(id),
+            user_id: user.id,
+            scan_type: 'security',
+            status: 'pending',
+            triggered_by: 'manual',
+            scan_config: {
+              scanType: 'comprehensive',
+              includeTests: true,
+              includeDependencies: true,
+              severityThreshold: 'low'
+            }
+          })
+          .select()
+          .single()
 
-      // Start the scan simulation
-      simulateScan(scan.id, Number(id)).then(() => {
-        // Reload project data to update scan history
-        loadProjectData()
-      })
+        if (error) throw error
 
-      // Navigate to the scan results page
-      navigate(`/scans/${scan.id}/results`)
+        // Start the scan simulation
+        simulateScan(scan.id, Number(id)).then(() => {
+          // Reload project data to update scan history
+          loadProjectData()
+        })
+
+        // Navigate to the scan results page
+        navigate(`/scans/${scan.id}/results`)
+      }
     } catch (error) {
       console.error('Error creating scan:', error)
-      alert('Failed to start scan. Please try again.')
+      alert(`Failed to start scan: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setScanningProject(false)
     }

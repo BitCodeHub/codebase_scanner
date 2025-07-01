@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import CreateProjectModal from '../components/forms/CreateProjectModal'
-import { simulateScan } from '../services/scanService'
+import { simulateScan, startRepositoryScan } from '../services/scanService'
 import { listProjects, Project } from '../services/projectService'
 
 interface ProjectWithStats extends Project {
@@ -78,42 +78,57 @@ export default function ProjectsPage() {
     try {
       setScanningProject(projectId)
       
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('No user found')
+      // Find the project to check if it has a repository URL
+      const project = projects.find(p => p.id === projectId)
+      if (!project) throw new Error('Project not found')
 
-      // Create a new scan record
-      const { data: scan, error } = await supabase
-        .from('scans')
-        .insert({
-          project_id: projectId,
-          user_id: user.id,
-          scan_type: 'security',
-          status: 'pending',
-          triggered_by: 'manual',
-          scan_config: {
-            scanType: 'comprehensive',
-            includeTests: true,
-            includeDependencies: true,
-            severityThreshold: 'low'
-          }
+      // If project has a repository URL, use repository scan
+      if (project.repository_url) {
+        const result = await startRepositoryScan(projectId, {
+          repositoryUrl: project.repository_url,
+          branch: 'main',
+          scanType: 'comprehensive'
         })
-        .select()
-        .single()
+        
+        // Navigate to the scan results page
+        navigate(`/scans/${result.scanId}/results`)
+      } else {
+        // For uploaded files, create a simulated scan
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error('No user found')
 
-      if (error) throw error
+        const { data: scan, error } = await supabase
+          .from('scans')
+          .insert({
+            project_id: projectId,
+            user_id: user.id,
+            scan_type: 'security',
+            status: 'pending',
+            triggered_by: 'manual',
+            scan_config: {
+              scanType: 'comprehensive',
+              includeTests: true,
+              includeDependencies: true,
+              severityThreshold: 'low'
+            }
+          })
+          .select()
+          .single()
 
-      // Start the scan simulation
-      simulateScan(scan.id, projectId).then(() => {
-        // Reload projects to update scan count
-        loadProjects()
-      })
+        if (error) throw error
 
-      // Navigate to the scan results page
-      navigate(`/scans/${scan.id}/results`)
+        // Start the scan simulation
+        simulateScan(scan.id, projectId).then(() => {
+          // Reload projects to update scan count
+          loadProjects()
+        })
+
+        // Navigate to the scan results page
+        navigate(`/scans/${scan.id}/results`)
+      }
     } catch (error) {
       console.error('Error creating scan:', error)
-      alert('Failed to start scan. Please try again.')
+      alert(`Failed to start scan: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setScanningProject(null)
     }

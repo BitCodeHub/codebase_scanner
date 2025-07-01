@@ -56,7 +56,7 @@ async def create_scan(
     """
     try:
         # Validate project ownership
-        project = supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user.id).single().execute()
+        project = supabase.table("projects").select("*").eq("id", project_id).eq("owner_id", current_user.id).single().execute()
         if not project.data:
             raise HTTPException(status_code=404, detail="Project not found")
         
@@ -261,7 +261,7 @@ async def get_project_scans(
     """Get all scans for a project."""
     try:
         # Verify project ownership
-        project = supabase.table("projects").select("id").eq("id", project_id).eq("user_id", current_user.id).single().execute()
+        project = supabase.table("projects").select("id").eq("id", project_id).eq("owner_id", current_user.id).single().execute()
         if not project.data:
             raise HTTPException(status_code=404, detail="Project not found")
         
@@ -328,7 +328,7 @@ async def scan_repository(
     """
     try:
         # Validate project ownership
-        project = supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user.id).single().execute()
+        project = supabase.table("projects").select("*").eq("id", project_id).eq("owner_id", current_user.id).single().execute()
         if not project.data:
             raise HTTPException(status_code=404, detail="Project not found")
         
