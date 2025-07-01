@@ -527,7 +527,7 @@ async def scan_repository_simple(request: dict):
 
 @app.post("/api/scans/mobile-app")
 async def scan_mobile_app(request: dict):
-    """Comprehensive mobile app security scanning with secrets detection"""
+    """Comprehensive mobile app security scanning with secrets detection and AI analysis"""
     try:
         import os
         from datetime import datetime
@@ -542,6 +542,7 @@ async def scan_mobile_app(request: dict):
         branch = request.get("branch", "main")
         scan_type = request.get("scan_type", "comprehensive")
         user_id = request.get("user_id")
+        enable_ai_analysis = request.get("enable_ai_analysis", True)
         
         if not project_id:
             return {"error": "project_id is required"}
@@ -556,6 +557,7 @@ async def scan_mobile_app(request: dict):
         print(f"Scan ID: {scan_id}")
         print(f"Repository: {repository_url}")
         print(f"Branch: {branch}")
+        print(f"AI Analysis: {'Enabled' if enable_ai_analysis else 'Disabled'}")
         print(f"Mobile Security Tools Available:")
         print(f"  ✅ Semgrep v1.127.1 - Static analysis for mobile apps")
         print(f"  ✅ Bandit v1.8.5 - Python security linter")
@@ -571,6 +573,7 @@ async def scan_mobile_app(request: dict):
         
         all_findings = []
         scan_results = {}
+        ai_insights = {}
         
         # Perform comprehensive mobile app security scanning
         try:
@@ -681,6 +684,22 @@ async def scan_mobile_app(request: dict):
             scan_results.get("gitleaks", {}).get("git_secrets_found", 0)
         )
         
+        # AI Analysis of findings
+        if enable_ai_analysis and (total_issues > 0 or total_secrets > 0):
+            print("🤖 Running AI analysis of security findings...")
+            try:
+                ai_insights = await generate_ai_security_insights(
+                    scan_results=scan_results,
+                    all_findings=all_findings[:10],  # Analyze top 10 findings
+                    repository_url=repository_url,
+                    total_issues=total_issues,
+                    total_secrets=total_secrets
+                )
+                print(f"✅ AI analysis completed with {len(ai_insights.get('vulnerability_analyses', []))} detailed insights")
+            except Exception as e:
+                print(f"⚠️ AI analysis failed: {e}")
+                ai_insights = {"error": f"AI analysis failed: {str(e)}"}
+        
         return {
             "id": scan_id,
             "project_id": project_id,
@@ -689,12 +708,13 @@ async def scan_mobile_app(request: dict):
             "created_at": datetime.utcnow().isoformat(),
             "repository_url": repository_url,
             "branch": branch,
-            "message": "Comprehensive mobile app security scan completed",
+            "message": "Comprehensive mobile app security scan completed with AI analysis",
             "summary": {
                 "total_security_issues": total_issues,
                 "total_secrets_found": total_secrets,
                 "tools_used": 3,
-                "scan_duration": "1-3 minutes"
+                "scan_duration": "1-3 minutes",
+                "ai_analysis_enabled": enable_ai_analysis
             },
             "tools_status": {
                 "semgrep": "✅ Mobile security rules + secrets detection",
@@ -702,6 +722,7 @@ async def scan_mobile_app(request: dict):
                 "gitleaks": "✅ Git secrets detection"
             },
             "detailed_results": scan_results,
+            "ai_insights": ai_insights,
             "security_focus": [
                 "Client ID and API key detection",
                 "Hardcoded credentials and secrets",
@@ -829,6 +850,209 @@ try:
     print("Compliance routes loaded successfully")
 except ImportError as e:
     print(f"Compliance module not found: {e}")
+
+async def generate_ai_security_insights(scan_results: dict, all_findings: list, repository_url: str, total_issues: int, total_secrets: int) -> dict:
+    """Generate AI-powered security insights using Claude API"""
+    try:
+        import anthropic
+        import os
+        
+        # Check if Anthropic API key is configured
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            return {"error": "Anthropic API key not configured"}
+        
+        client = anthropic.Anthropic(api_key=api_key)
+        
+        # Prepare findings summary for analysis
+        findings_summary = {
+            "total_security_issues": total_issues,
+            "total_secrets_found": total_secrets,
+            "semgrep_findings": scan_results.get("semgrep", {}).get("findings", 0),
+            "git_secrets": scan_results.get("gitleaks", {}).get("git_secrets_found", 0),
+            "credential_files": scan_results.get("detect_secrets", {}).get("files_with_secrets", 0),
+            "sample_findings": all_findings[:5]  # Top 5 findings for analysis
+        }
+        
+        prompt = f"""You are a senior cybersecurity analyst reviewing a mobile application security scan. 
+Analyze the following security findings and provide comprehensive insights:
+
+Repository: {repository_url}
+Scan Results Summary:
+- Total Security Issues: {total_issues}
+- Total Secrets Found: {total_secrets}
+- Semgrep Findings: {scan_results.get("semgrep", {}).get("findings", 0)}
+- Git Secrets: {scan_results.get("gitleaks", {}).get("git_secrets_found", 0)}
+- Files with Credentials: {scan_results.get("detect_secrets", {}).get("files_with_secrets", 0)}
+
+Sample Security Findings:
+{json.dumps(findings_summary.get("sample_findings", []), indent=2)}
+
+Provide a comprehensive analysis including:
+1. **Executive Summary**: High-level risk assessment for business stakeholders
+2. **Critical Issues**: Top 3 most dangerous vulnerabilities that need immediate attention
+3. **Mobile-Specific Risks**: Risks specific to mobile applications (data leakage, runtime attacks, etc.)
+4. **Secrets & Credentials**: Analysis of exposed API keys, tokens, and sensitive data
+5. **Compliance Impact**: How findings affect OWASP Mobile Top 10, PCI-DSS, SOC 2, etc.
+6. **Remediation Roadmap**: Prioritized action plan with timelines
+7. **Prevention Strategies**: Long-term security improvements
+8. **Developer Education**: Key security practices for the development team
+
+Format your response as JSON with these exact keys:
+- executive_summary
+- critical_issues (array of objects with: title, description, impact, fix)
+- mobile_risks (array)
+- secrets_analysis
+- compliance_violations (object)
+- remediation_roadmap (array with priority, action, timeline)
+- prevention_strategies (array)
+- developer_recommendations (array)
+- overall_risk_score (1-10)
+- next_steps (array)"""
+        
+        message = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=4000,
+            temperature=0.1,
+            system="You are a senior cybersecurity analyst with expertise in mobile application security, OWASP Mobile Top 10, and enterprise security compliance. Provide detailed, actionable security insights in JSON format.",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+        
+        response_text = message.content[0].text
+        
+        # Extract JSON from response
+        json_start = response_text.find('{')
+        json_end = response_text.rfind('}') + 1
+        if json_start != -1 and json_end > json_start:
+            response_text = response_text[json_start:json_end]
+        
+        ai_analysis = json.loads(response_text)
+        
+        # Add metadata
+        ai_analysis["analysis_timestamp"] = datetime.utcnow().isoformat()
+        ai_analysis["model_used"] = "claude-3-5-sonnet-20241022"
+        ai_analysis["findings_analyzed"] = len(all_findings)
+        
+        return ai_analysis
+        
+    except json.JSONDecodeError as e:
+        return {"error": f"Failed to parse AI response: {str(e)}"}
+    except Exception as e:
+        return {"error": f"AI analysis failed: {str(e)}"}
+
+@app.post("/api/test/ai-analysis")
+async def test_ai_analysis():
+    """Test AI analysis capabilities with sample security findings"""
+    try:
+        # Sample security findings for demonstration
+        sample_findings = [
+            {
+                "check_id": "javascript.jwt.security.jwt-hardcoded-secret",
+                "path": "src/auth/jwt.js",
+                "start": {"line": 15, "col": 20},
+                "end": {"line": 15, "col": 45},
+                "message": "Hardcoded JWT secret detected",
+                "severity": "ERROR",
+                "extra": {
+                    "message": "JWT secret is hardcoded. This is a security vulnerability.",
+                    "metavars": {
+                        "$SECRET": {
+                            "start": {"line": 15, "col": 21},
+                            "end": {"line": 15, "col": 44},
+                            "abstract_content": "secret123"
+                        }
+                    }
+                }
+            },
+            {
+                "check_id": "javascript.crypto.insecure-random",
+                "path": "src/utils/crypto.js", 
+                "start": {"line": 42, "col": 15},
+                "end": {"line": 42, "col": 35},
+                "message": "Insecure random number generation",
+                "severity": "WARNING",
+                "extra": {
+                    "message": "Math.random() is not cryptographically secure"
+                }
+            }
+        ]
+        
+        sample_scan_results = {
+            "semgrep": {
+                "status": "completed",
+                "findings": 2,
+                "details": sample_findings
+            },
+            "gitleaks": {
+                "status": "completed", 
+                "git_secrets_found": 3
+            },
+            "detect_secrets": {
+                "status": "completed",
+                "credentials_found": 5,
+                "files_with_secrets": 3
+            }
+        }
+        
+        ai_insights = await generate_ai_security_insights(
+            scan_results=sample_scan_results,
+            all_findings=sample_findings,
+            repository_url="https://github.com/example/mobile-app",
+            total_issues=2,
+            total_secrets=8
+        )
+        
+        return {
+            "success": True,
+            "demo_mode": True,
+            "sample_findings": sample_findings,
+            "ai_insights": ai_insights,
+            "message": "AI analysis demonstration completed"
+        }
+        
+    except Exception as e:
+        return {"error": f"AI analysis test failed: {str(e)}"}
+
+@app.post("/api/ai/analyze-scan-results")
+async def analyze_scan_results_with_ai(request: dict):
+    """Standalone endpoint for AI analysis of security scan results"""
+    try:
+        scan_results = request.get("scan_results", {})
+        findings = request.get("findings", [])
+        repository_url = request.get("repository_url", "Unknown")
+        
+        total_issues = len(findings)
+        total_secrets = (
+            scan_results.get("detect_secrets", {}).get("credentials_found", 0) +
+            scan_results.get("gitleaks", {}).get("git_secrets_found", 0)
+        )
+        
+        ai_insights = await generate_ai_security_insights(
+            scan_results=scan_results,
+            all_findings=findings[:15],  # Analyze top 15 findings
+            repository_url=repository_url,
+            total_issues=total_issues,
+            total_secrets=total_secrets
+        )
+        
+        return {
+            "success": True,
+            "ai_insights": ai_insights,
+            "metadata": {
+                "findings_analyzed": min(len(findings), 15),
+                "total_findings": len(findings),
+                "total_secrets": total_secrets,
+                "analysis_timestamp": datetime.utcnow().isoformat()
+            }
+        }
+        
+    except Exception as e:
+        return {"error": f"AI analysis failed: {str(e)}"}
 
 # TODO: Add these routes when implemented
 # from app.api.auth import router as auth_router

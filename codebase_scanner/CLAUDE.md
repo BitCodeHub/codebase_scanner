@@ -65,10 +65,14 @@
 
 ### API Endpoints:
 - `/api/test/scanner-tools` - Test all 10 security tools availability
-- `/api/scans/mobile-app` - Comprehensive mobile app security scanning
+- `/api/scans/mobile-app` - Comprehensive mobile app security scanning with AI analysis
 - `/api/scans/repository-simple` - General repository security scanning
+- `/api/test/ai-analysis` - Test AI security analysis with sample findings
+- `/api/ai/analyze-scan-results` - Standalone AI analysis of security scan results
 
-### Usage Example:
+### Usage Examples:
+
+#### Mobile App Security Scan with AI Analysis:
 ```bash
 curl -X POST "http://localhost:8000/api/scans/mobile-app" \
   -H "Content-Type: application/json" \
@@ -77,8 +81,35 @@ curl -X POST "http://localhost:8000/api/scans/mobile-app" \
     "repository_url": "https://github.com/your-org/mobile-app",
     "branch": "main",
     "scan_type": "comprehensive",
-    "user_id": "user-id"
+    "user_id": "user-id",
+    "enable_ai_analysis": true
   }'
+```
+
+#### Test AI Analysis Capabilities:
+```bash
+curl -X POST "http://localhost:8000/api/test/ai-analysis" \
+  -H "Content-Type: application/json"
+```
+
+#### Standalone AI Analysis of Scan Results:
+```bash
+curl -X POST "http://localhost:8000/api/ai/analyze-scan-results" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "scan_results": {
+      "semgrep": {"findings": 5, "status": "completed"},
+      "gitleaks": {"git_secrets_found": 3, "status": "completed"}
+    },
+    "findings": [{"check_id": "jwt-hardcoded", "severity": "ERROR"}],
+    "repository_url": "https://github.com/example/app"
+  }'
+```
+
+#### Run AI Analysis Demo:
+```bash
+cd backend
+python3 demo_ai_analysis.py
 ```
 
 ### Security Focus Areas:
@@ -88,6 +119,32 @@ curl -X POST "http://localhost:8000/api/scans/mobile-app" \
 4. Git commit history credential leaks
 5. Android APK security analysis
 6. Production codebase security assessment
+
+## AI-Powered Security Analysis
+
+### Claude AI Integration:
+- **Intelligent Vulnerability Analysis**: Claude AI analyzes security findings and provides context
+- **Plain English Explanations**: Converts technical findings into business-understandable language
+- **Fix Recommendations**: Specific, actionable remediation steps for each vulnerability
+- **Compliance Mapping**: Maps findings to OWASP, PCI-DSS, SOC 2, and other frameworks
+- **Risk Prioritization**: AI-powered risk scoring and prioritization
+- **Executive Reporting**: Business-friendly security summaries
+
+### AI Analysis Capabilities:
+- **Executive Summary**: High-level risk assessment for business stakeholders
+- **Critical Issues**: Top 3 most dangerous vulnerabilities requiring immediate attention
+- **Mobile-Specific Risks**: Analysis of mobile app security threats (data leakage, runtime attacks)
+- **Secrets Analysis**: Deep analysis of exposed API keys, tokens, and credentials
+- **Compliance Violations**: Automatic mapping to security frameworks and standards
+- **Remediation Roadmap**: Prioritized action plan with realistic timelines
+- **Prevention Strategies**: Long-term security improvement recommendations
+- **Developer Education**: Targeted security training recommendations
+
+### AI Configuration:
+- **Model**: Claude 3.5 Sonnet (latest)
+- **Features**: Real-time analysis, batch processing, contextual insights
+- **Environment Variable**: `ANTHROPIC_API_KEY` required for AI features
+- **Integration**: Seamlessly integrated with all security scanning tools
 
 ## Key Files
 - Backend project API: `/backend/src/api/projects.py`
