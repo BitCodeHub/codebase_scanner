@@ -12,23 +12,18 @@ import {
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import CreateProjectModal from '../components/forms/CreateProjectModal'
 import { simulateScan } from '../services/scanService'
+import { listProjects, Project } from '../services/projectService'
 
-interface Project {
-  id: number
-  name: string
-  description: string
-  github_repo_url: string
-  created_at: string
-  updated_at: string
+interface ProjectWithStats extends Project {
   scan_count?: number
   last_scan?: any
 }
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<ProjectWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [scanningProject, setScanningProject] = useState<number | null>(null)
+  const [scanningProject, setScanningProject] = useState<string | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -37,29 +32,36 @@ export default function ProjectsPage() {
 
   const loadProjects = async () => {
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          scans (
-            id,
-            status,
-            created_at,
-            total_issues
-          )
-        `)
-        .order('updated_at', { ascending: false })
+      const response = await listProjects(0, 50)
+      
+      // For now, we'll fetch scan counts separately
+      // In a production app, this would be included in the API response
+      const projectsWithStats = await Promise.all(
+        response.projects.map(async (project) => {
+          try {
+            const { data: scans } = await supabase
+              .from('scans')
+              .select('id, status, created_at, total_issues')
+              .eq('project_id', project.id)
+              .order('created_at', { ascending: false })
+            
+            return {
+              ...project,
+              scan_count: scans?.length || 0,
+              last_scan: scans?.[0] || null
+            } as ProjectWithStats
+          } catch (error) {
+            console.error(`Error loading scans for project ${project.id}:`, error)
+            return {
+              ...project,
+              scan_count: 0,
+              last_scan: null
+            } as ProjectWithStats
+          }
+        })
+      )
 
-      if (error) throw error
-
-      // Process projects to add scan statistics
-      const processedProjects = data.map((project: any) => ({
-        ...project,
-        scan_count: project.scans?.length || 0,
-        last_scan: project.scans?.[0] || null
-      }))
-
-      setProjects(processedProjects)
+      setProjects(projectsWithStats)
     } catch (error) {
       console.error('Error loading projects:', error)
     } finally {
@@ -72,7 +74,7 @@ export default function ProjectsPage() {
     loadProjects()
   }
 
-  const handleScan = async (projectId: number) => {
+  const handleScan = async (projectId: string) => {
     try {
       setScanningProject(projectId)
       
@@ -163,10 +165,10 @@ export default function ProjectsPage() {
 
               {/* Project Stats */}
               <div className="space-y-3 mb-4">
-                {project.github_repo_url && (
+                {project.repository_url && (
                   <div className="flex items-center text-sm text-gray-600">
                     <GitBranchIcon className="h-4 w-4 mr-2" />
-                    <span className="truncate">{project.github_repo_url}</span>
+                    <span className="truncate">{project.repository_url}</span>
                   </div>
                 )}
                 

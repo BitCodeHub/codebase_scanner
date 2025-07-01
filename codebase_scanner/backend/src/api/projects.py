@@ -19,6 +19,21 @@ from src.utils.logging import get_logger
 router = APIRouter(prefix="/projects", tags=["projects"])
 logger = get_logger(__name__)
 
+def db_project_to_response(db_project: dict) -> dict:
+    """Map database project fields to API response fields."""
+    return {
+        "id": db_project["id"],
+        "user_id": db_project["owner_id"],  # Map owner_id to user_id
+        "name": db_project["name"],
+        "description": db_project.get("description"),
+        "repository_url": db_project.get("github_repo_url"),  # Map github_repo_url to repository_url
+        "language": db_project.get("language"),
+        "framework": db_project.get("framework"),
+        "active": db_project.get("is_active", True),  # Map is_active to active
+        "created_at": db_project["created_at"],
+        "updated_at": db_project["updated_at"]
+    }
+
 @router.post("/", response_model=ProjectResponse)
 async def create_project(
     project: ProjectCreate,
@@ -29,13 +44,10 @@ async def create_project(
     try:
         project_data = {
             "id": str(uuid.uuid4()),
-            "user_id": current_user.id,
+            "owner_id": current_user.id,  # Changed from user_id to owner_id to match schema
             "name": project.name,
             "description": project.description,
-            "repository_url": project.repository_url,
-            "language": project.language,
-            "framework": project.framework,
-            "active": True,
+            "github_repo_url": str(project.repository_url) if project.repository_url else None,  # Map to github_repo_url
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat()
         }
@@ -47,7 +59,7 @@ async def create_project(
             "project_name": project.name
         })
         
-        return ProjectResponse(**result.data[0])
+        return ProjectResponse(**db_project_to_response(result.data[0]))
         
     except Exception as e:
         logger.error(f"Failed to create project: {e}")
@@ -64,11 +76,11 @@ async def list_projects(
 ):
     """List user's projects with pagination and search."""
     try:
-        # Build query
-        query = supabase.table("projects").select("*").eq("user_id", current_user.id)
+        # Build query (changed from user_id to owner_id to match schema)
+        query = supabase.table("projects").select("*").eq("owner_id", current_user.id)
         
         if active_only:
-            query = query.eq("active", True)
+            query = query.eq("is_active", True)  # Changed from active to is_active to match schema
         
         if search:
             query = query.or_(f"name.ilike.%{search}%,description.ilike.%{search}%")
@@ -82,7 +94,7 @@ async def list_projects(
             .range(skip, skip + limit - 1)\
             .execute()
         
-        projects = [ProjectResponse(**project) for project in results.data]
+        projects = [ProjectResponse(**db_project_to_response(project)) for project in results.data]
         
         return ProjectListResponse(
             projects=projects,
@@ -106,14 +118,14 @@ async def get_project(
         result = supabase.table("projects")\
             .select("*")\
             .eq("id", project_id)\
-            .eq("user_id", current_user.id)\
+            .eq("owner_id", current_user.id)\
             .single()\
             .execute()
         
         if not result.data:
             raise HTTPException(status_code=404, detail="Project not found")
         
-        return ProjectResponse(**result.data)
+        return ProjectResponse(**db_project_to_response(result.data))
         
     except HTTPException:
         raise
@@ -134,15 +146,24 @@ async def update_project(
         existing = supabase.table("projects")\
             .select("id")\
             .eq("id", project_id)\
-            .eq("user_id", current_user.id)\
+            .eq("owner_id", current_user.id)\
             .single()\
             .execute()
         
         if not existing.data:
             raise HTTPException(status_code=404, detail="Project not found")
         
-        # Update project
+        # Update project - map API fields to database fields
         update_data = project_update.dict(exclude_unset=True)
+        
+        # Map repository_url to github_repo_url if provided
+        if "repository_url" in update_data:
+            update_data["github_repo_url"] = str(update_data.pop("repository_url")) if update_data["repository_url"] else None
+        
+        # Map active to is_active if provided
+        if "active" in update_data:
+            update_data["is_active"] = update_data.pop("active")
+            
         update_data["updated_at"] = datetime.utcnow().isoformat()
         
         result = supabase.table("projects")\
@@ -176,7 +197,7 @@ async def delete_project(
         existing = supabase.table("projects")\
             .select("id")\
             .eq("id", project_id)\
-            .eq("user_id", current_user.id)\
+            .eq("owner_id", current_user.id)\
             .single()\
             .execute()
         
@@ -214,7 +235,7 @@ async def delete_project(
         else:
             # Soft delete - just deactivate
             supabase.table("projects")\
-                .update({"active": False, "updated_at": datetime.utcnow().isoformat()})\
+                .update({"is_active": False, "updated_at": datetime.utcnow().isoformat()})\
                 .eq("id", project_id)\
                 .execute()
             
@@ -240,7 +261,7 @@ async def get_project_stats(
         project = supabase.table("projects")\
             .select("*")\
             .eq("id", project_id)\
-            .eq("user_id", current_user.id)\
+            .eq("owner_id", current_user.id)\
             .single()\
             .execute()
         

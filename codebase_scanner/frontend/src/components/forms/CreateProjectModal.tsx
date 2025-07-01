@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { supabase, db } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase'
 import { XIcon, UploadIcon, GitBranchIcon } from 'lucide-react'
 import LoadingSpinner from '../ui/LoadingSpinner'
+import { runtimeConfig } from '../../generated/config'
 
 interface CreateProjectModalProps {
   onClose: () => void
@@ -24,20 +25,31 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
     setError('')
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const session = await supabase.auth.getSession()
+      const token = session.data.session?.access_token
       
-      if (!user) {
+      if (!token) {
         throw new Error('User not authenticated')
       }
 
-      const { error } = await db.projects.create({
-        name: formData.name,
-        description: formData.description,
-        github_repo_url: formData.source_type === 'github' ? formData.github_repo_url : null,
-        owner_id: user.id
+      // Use the backend API to create the project
+      const response = await fetch(`${runtimeConfig.apiUrl}/api/projects/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description,
+          repository_url: formData.source_type === 'github' ? formData.github_repo_url : null
+        })
       })
 
-      if (error) throw error
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Failed to create project')
+      }
 
       onSuccess()
     } catch (error: any) {
