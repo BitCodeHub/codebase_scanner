@@ -78,8 +78,7 @@ COPY . .
 RUN mkdir -p /app/logs /app/temp /app/uploads && \
     chown -R appuser:appuser /app
 
-# Copy and set permissions for scripts
-COPY --chmod=755 scripts/start.sh /app/scripts/
+# Scripts directory will be created by the app if needed
 
 # Create a tool verification script
 RUN echo '#!/bin/bash\n\
