@@ -25,6 +25,8 @@ redis>=5.0.0,<5.1.0
 semgrep>=1.52.0,<1.53.0
 bandit>=1.7.0,<1.8.0
 safety>=3.2.0,<3.3.0
+# Note: TruffleHog v3 should be installed via brew: brew install trufflehog
+# The Python version (truffleHog==2.2.1) has compatibility issues with Python 3.13
 
 # Git operations
 GitPython>=3.1.0,<3.2.0

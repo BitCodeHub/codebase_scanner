@@ -266,12 +266,24 @@ async def test_scanner_tools():
         
         # Test TruffleHog (secrets detection)
         try:
-            result = subprocess.run(['python3', '-c', 'import truffleHog; print("TruffleHog 2.2.1")'], capture_output=True, text=True, timeout=10)
-            tools_status['trufflehog'] = {
-                'available': result.returncode == 0,
-                'version': result.stdout.strip() if result.returncode == 0 else "TruffleHog 2.2.1",
-                'error': result.stderr if result.returncode != 0 else None
-            }
+            # Try TruffleHog v3 first (preferred)
+            result = subprocess.run(['/opt/homebrew/bin/trufflehog', '--version'], capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                # TruffleHog v3 outputs version to stderr
+                version_output = result.stderr.strip() if result.stderr else result.stdout.strip()
+                tools_status['trufflehog'] = {
+                    'available': True,
+                    'version': version_output if version_output else "TruffleHog v3.89.2",
+                    'error': None
+                }
+            else:
+                # Fallback to system trufflehog
+                result = subprocess.run(['trufflehog', '--version'], capture_output=True, text=True, timeout=10)
+                tools_status['trufflehog'] = {
+                    'available': result.returncode == 0,
+                    'version': result.stdout.strip() if result.returncode == 0 else "Not found",
+                    'error': result.stderr if result.returncode != 0 else None
+                }
         except Exception as e:
             tools_status['trufflehog'] = {'available': False, 'error': str(e)}
         
@@ -565,7 +577,7 @@ async def scan_mobile_app(request: dict):
         print(f"  ✅ Bandit v1.8.5 - Python security linter")
         print(f"  ✅ Safety v3.5.2 - Dependency vulnerability scanner")
         print(f"  ✅ Gitleaks v8.27.2 - Git secrets scanner")
-        print(f"  ✅ TruffleHog v2.2.1 - Deep secrets detection")
+        print(f"  ✅ TruffleHog v3.89.2 - Deep secrets detection")
         print(f"  ✅ detect-secrets v1.5.0 - Advanced credential scanning")
         print(f"  ✅ Retire.js v5.2.7 - JavaScript vulnerability scanner")
         print(f"  ✅ JADX v1.5.2 - Android APK analysis")

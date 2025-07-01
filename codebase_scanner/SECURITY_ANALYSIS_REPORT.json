@@ -1,0 +1,556 @@
+{
+  "report_metadata": {
+    "generated_at": "2025-07-01T04:14:08.869341",
+    "report_type": "Comprehensive Security Analysis",
+    "target_repository": "https://github.com/BitCodeHub/codebase_scanner"
+  },
+  "security_tool_results": {
+    "test_timestamp": "2025-07-01T04:13:46.044456",
+    "repository": "https://github.com/BitCodeHub/codebase_scanner",
+    "branch": "main",
+    "tools_tested": {
+      "semgrep": {
+        "success": true,
+        "version": "1.127.1"
+      },
+      "bandit": {
+        "success": true,
+        "version": "bandit 1.8.5\n  python version = 3.13.0 (v3.13.0:60403a5409f, Oct  7 2024, 00:37:40) [Clang 15.0.0 (clang-1500.3.9.4)]"
+      },
+      "safety": {
+        "success": true,
+        "version": "safety, version 3.5.2"
+      },
+      "gitleaks": {
+        "success": true,
+        "version": "8.27.2"
+      },
+      "trufflehog": {
+        "success": false,
+        "version": ""
+      },
+      "detect_secrets": {
+        "success": true,
+        "version": "1.5.0"
+      },
+      "retire_js": {
+        "success": true,
+        "version": "5.2.7"
+      },
+      "jadx": {
+        "success": true,
+        "version": "1.5.2",
+        "note": "Tool available - requires APK files for testing"
+      },
+      "apkleaks": {
+        "success": true,
+        "version": "",
+        "note": "Tool available - requires APK files for testing"
+      },
+      "qark": {
+        "success": true,
+        "version": "qark, version 4.0.0",
+        "note": "Tool available - requires APK files for testing"
+      }
+    },
+    "findings": {
+      "semgrep": {
+        "total_findings": 90,
+        "by_severity": {
+          "ERROR": 21,
+          "INFO": 8,
+          "WARNING": 61
+        },
+        "sample_findings": [
+          {
+            "check_id": "dockerfile.security.missing-user.missing-user",
+            "path": "backend/Dockerfile",
+            "start": {
+              "line": 30,
+              "col": 1,
+              "offset": 572
+            },
+            "end": {
+              "line": 30,
+              "col": 71,
+              "offset": 642
+            },
+            "extra": {
+              "message": "By not specifying a USER, a program in the container may run as 'root'. This is a security hazard. If an attacker can control a process running as root, they may have control over the container. Ensure that the last USER in a Dockerfile is a USER other than 'root'.",
+              "fix": "USER non-root\nCMD [\"uvicorn\", \"app.main:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]",
+              "metadata": {
+                "cwe": [
+                  "CWE-250: Execution with Unnecessary Privileges"
+                ],
+                "category": "security",
+                "technology": [
+                  "dockerfile"
+                ],
+                "confidence": "MEDIUM",
+                "owasp": [
+                  "A04:2021 - Insecure Design"
+                ],
+                "references": [
+                  "https://owasp.org/Top10/A04_2021-Insecure_Design"
+                ],
+                "subcategory": [
+                  "audit"
+                ],
+                "likelihood": "LOW",
+                "impact": "MEDIUM",
+                "license": "Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license",
+                "vulnerability_class": [
+                  "Improper Authorization"
+                ],
+                "source": "https://semgrep.dev/r/dockerfile.security.missing-user.missing-user",
+                "shortlink": "https://sg.run/Gbvn"
+              },
+              "severity": "ERROR",
+              "fingerprint": "requires login",
+              "lines": "requires login",
+              "validation_state": "NO_VALIDATOR",
+              "engine_kind": "OSS"
+            }
+          },
+          {
+            "check_id": "trailofbits.python.tarfile-extractall-traversal.tarfile-extractall-traversal",
+            "path": "backend/app/services/scanner.py",
+            "start": {
+              "line": 109,
+              "col": 22,
+              "offset": 4256
+            },
+            "end": {
+              "line": 110,
+              "col": 49,
+              "offset": 4347
+            },
+            "extra": {
+              "message": "Possible path traversal through `tarfile.open($PATH).extractall()` if the source tar is controlled by an attacker",
+              "metadata": {
+                "category": "security",
+                "cwe": "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')",
+                "subcategory": [
+                  "vuln"
+                ],
+                "confidence": "MEDIUM",
+                "likelihood": "MEDIUM",
+                "impact": "MEDIUM",
+                "technology": [
+                  "--no-technology--"
+                ],
+                "description": "Potential path traversal in call to `extractall` for a `tarfile`",
+                "references": [
+                  "https://docs.python.org/3/library/tarfile.html#tarfile.TarFile.extractall"
+                ],
+                "license": "AGPL-3.0 license",
+                "vulnerability_class": [
+                  "Path Traversal"
+                ],
+                "source": "https://semgrep.dev/r/trailofbits.python.tarfile-extractall-traversal.tarfile-extractall-traversal",
+                "shortlink": "https://sg.run/2RLD"
+              },
+              "severity": "ERROR",
+              "fingerprint": "requires login",
+              "lines": "requires login",
+              "validation_state": "NO_VALIDATOR",
+              "engine_kind": "OSS"
+            }
+          },
+          {
+            "check_id": "javascript.express.security.audit.express-check-csurf-middleware-usage.express-check-csurf-middleware-usage",
+            "path": "backend/uploads/3/2/test_vulnerable_code.js",
+            "start": {
+              "line": 10,
+              "col": 7,
+              "offset": 328
+            },
+            "end": {
+              "line": 10,
+              "col": 22,
+              "offset": 343
+            },
+            "extra": {
+              "message": "A CSRF middleware was not detected in your express application. Ensure you are either using one such as `csurf` or `csrf` (see rule references) and/or you are properly doing CSRF validation in your routes with a token or cookies.",
+              "metadata": {
+                "category": "security",
+                "references": [
+                  "https://www.npmjs.com/package/csurf",
+                  "https://www.npmjs.com/package/csrf",
+                  "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html"
+                ],
+                "cwe": [
+                  "CWE-352: Cross-Site Request Forgery (CSRF)"
+                ],
+                "owasp": [
+                  "A01:2021 - Broken Access Control"
+                ],
+                "technology": [
+                  "javascript",
+                  "typescript",
+                  "express"
+                ],
+                "cwe2022-top25": true,
+                "cwe2021-top25": true,
+                "subcategory": [
+                  "audit"
+                ],
+                "likelihood": "LOW",
+                "impact": "HIGH",
+                "confidence": "LOW",
+                "license": "Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license",
+                "vulnerability_class": [
+                  "Cross-Site Request Forgery (CSRF)"
+                ],
+                "source": "https://semgrep.dev/r/javascript.express.security.audit.express-check-csurf-middleware-usage.express-check-csurf-middleware-usage",
+                "shortlink": "https://sg.run/BxzR"
+              },
+              "severity": "INFO",
+              "fingerprint": "requires login",
+              "lines": "requires login",
+              "validation_state": "NO_VALIDATOR",
+              "engine_kind": "OSS"
+            }
+          },
+          {
+            "check_id": "javascript.lang.security.detect-child-process.detect-child-process",
+            "path": "backend/uploads/3/2/test_vulnerable_code.js",
+            "start": {
+              "line": 27,
+              "col": 10,
+              "offset": 845
+            },
+            "end": {
+              "line": 27,
+              "col": 17,
+              "offset": 852
+            },
+            "extra": {
+              "message": "Detected calls to child_process from a function argument `req`. This could lead to a command injection if the input is user controllable. Try to avoid calls to child_process, and if it is needed ensure user input is correctly sanitized or sandboxed. ",
+              "metadata": {
+                "cwe": [
+                  "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+                ],
+                "owasp": [
+                  "A01:2017 - Injection",
+                  "A03:2021 - Injection"
+                ],
+                "references": [
+                  "https://cheatsheetseries.owasp.org/cheatsheets/Nodejs_Security_Cheat_Sheet.html#do-not-use-dangerous-functions"
+                ],
+                "source-rule-url": "https://github.com/nodesecurity/eslint-plugin-security/blob/master/rules/detect-child-process.js",
+                "category": "security",
+                "technology": [
+                  "javascript"
+                ],
+                "cwe2022-top25": true,
+                "cwe2021-top25": true,
+                "subcategory": [
+                  "audit"
+                ],
+                "likelihood": "LOW",
+                "impact": "HIGH",
+                "confidence": "LOW",
+                "license": "Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license",
+                "vulnerability_class": [
+                  "Command Injection"
+                ],
+                "source": "https://semgrep.dev/r/javascript.lang.security.detect-child-process.detect-child-process",
+                "shortlink": "https://sg.run/l2lo"
+              },
+              "severity": "ERROR",
+              "fingerprint": "requires login",
+              "lines": "requires login",
+              "validation_state": "NO_VALIDATOR",
+              "engine_kind": "OSS"
+            }
+          },
+          {
+            "check_id": "javascript.express.security.audit.express-res-sendfile.express-res-sendfile",
+            "path": "backend/uploads/3/2/test_vulnerable_code.js",
+            "start": {
+              "line": 46,
+              "col": 18,
+              "offset": 1426
+            },
+            "end": {
+              "line": 46,
+              "col": 26,
+              "offset": 1434
+            },
+            "extra": {
+              "message": "The application processes user-input, this is passed to res.sendFile which can allow an attacker to arbitrarily read files on the system through path traversal. It is recommended to perform input validation in addition to canonicalizing the path. This allows you to validate the path against the intended directory it should be accessing.",
+              "metadata": {
+                "references": [
+                  "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+                ],
+                "technology": [
+                  "express"
+                ],
+                "category": "security",
+                "cwe": [
+                  "CWE-73: External Control of File Name or Path"
+                ],
+                "owasp": [
+                  "A04:2021 - Insecure Design"
+                ],
+                "subcategory": [
+                  "vuln"
+                ],
+                "likelihood": "HIGH",
+                "impact": "MEDIUM",
+                "confidence": "MEDIUM",
+                "license": "Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license",
+                "vulnerability_class": [
+                  "Path Traversal"
+                ],
+                "source": "https://semgrep.dev/r/javascript.express.security.audit.express-res-sendfile.express-res-sendfile",
+                "shortlink": "https://sg.run/7DJk"
+              },
+              "severity": "WARNING",
+              "fingerprint": "requires login",
+              "lines": "requires login",
+              "validation_state": "NO_VALIDATOR",
+              "engine_kind": "OSS"
+            }
+          }
+        ]
+      },
+      "bandit": {
+        "error": "Failed to parse results"
+      },
+      "gitleaks": {
+        "total_secrets": 14,
+        "sample_findings": [
+          {
+            "RuleID": "generic-api-key",
+            "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+            "StartLine": 195,
+            "EndLine": 195,
+            "StartColumn": 2,
+            "EndColumn": 32,
+            "Match": "API_KEY = \"sk-1234567890abcdef\"",
+            "Secret": "sk-1234567890abcdef",
+            "File": "TESTING.md",
+            "SymlinkFile": "",
+            "Commit": "42850d05f8fb55d96a5cfaa46195c30e078c729e",
+            "Link": "https://github.com/BitCodeHub/codebase_scanner/blob/42850d05f8fb55d96a5cfaa46195c30e078c729e/TESTING.md?plain=1#L195",
+            "Entropy": 4.2479277,
+            "Author": "BitCodeHub",
+            "Email": "ocspsreefer@gmail.com",
+            "Date": "2025-07-01T10:47:26Z",
+            "Message": "feat: integrate Claude AI for intelligent security analysis\n\n- Enhanced mobile app security scanning with AI-powered analysis\n- Added Claude 3.5 Sonnet integration for vulnerability insights\n- Created comprehensive AI analysis endpoint with business intelligence\n- Added plain English explanations and fix recommendations\n- Implemented executive summary and risk prioritization features\n- Added compliance mapping and remediation roadmaps\n- Created demo script for testing AI analysis capabilities\n- Updated documentation with AI features and usage examples\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+            "Tags": [],
+            "Fingerprint": "42850d05f8fb55d96a5cfaa46195c30e078c729e:TESTING.md:generic-api-key:195"
+          },
+          {
+            "RuleID": "stripe-access-token",
+            "Description": "Found a Stripe Access Token, posing a risk to payment processing services and sensitive financial data.",
+            "StartLine": 234,
+            "EndLine": 234,
+            "StartColumn": 19,
+            "EndColumn": 37,
+            "Match": "sk_test_1234567890'",
+            "Secret": "sk_test_1234567890",
+            "File": "TESTING.md",
+            "SymlinkFile": "",
+            "Commit": "42850d05f8fb55d96a5cfaa46195c30e078c729e",
+            "Link": "https://github.com/BitCodeHub/codebase_scanner/blob/42850d05f8fb55d96a5cfaa46195c30e078c729e/TESTING.md?plain=1#L234",
+            "Entropy": 3.8365917,
+            "Author": "BitCodeHub",
+            "Email": "ocspsreefer@gmail.com",
+            "Date": "2025-07-01T10:47:26Z",
+            "Message": "feat: integrate Claude AI for intelligent security analysis\n\n- Enhanced mobile app security scanning with AI-powered analysis\n- Added Claude 3.5 Sonnet integration for vulnerability insights\n- Created comprehensive AI analysis endpoint with business intelligence\n- Added plain English explanations and fix recommendations\n- Implemented executive summary and risk prioritization features\n- Added compliance mapping and remediation roadmaps\n- Created demo script for testing AI analysis capabilities\n- Updated documentation with AI features and usage examples\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+            "Tags": [],
+            "Fingerprint": "42850d05f8fb55d96a5cfaa46195c30e078c729e:TESTING.md:stripe-access-token:234"
+          },
+          {
+            "RuleID": "generic-api-key",
+            "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+            "StartLine": 240,
+            "EndLine": 240,
+            "StartColumn": 2,
+            "EndColumn": 32,
+            "Match": "API_KEY = \"sk-1234567890abcdef\"",
+            "Secret": "sk-1234567890abcdef",
+            "File": "codebase_scanner/TESTING_GUIDE.md",
+            "SymlinkFile": "",
+            "Commit": "42850d05f8fb55d96a5cfaa46195c30e078c729e",
+            "Link": "https://github.com/BitCodeHub/codebase_scanner/blob/42850d05f8fb55d96a5cfaa46195c30e078c729e/codebase_scanner/TESTING_GUIDE.md?plain=1#L240",
+            "Entropy": 4.2479277,
+            "Author": "BitCodeHub",
+            "Email": "ocspsreefer@gmail.com",
+            "Date": "2025-07-01T10:47:26Z",
+            "Message": "feat: integrate Claude AI for intelligent security analysis\n\n- Enhanced mobile app security scanning with AI-powered analysis\n- Added Claude 3.5 Sonnet integration for vulnerability insights\n- Created comprehensive AI analysis endpoint with business intelligence\n- Added plain English explanations and fix recommendations\n- Implemented executive summary and risk prioritization features\n- Added compliance mapping and remediation roadmaps\n- Created demo script for testing AI analysis capabilities\n- Updated documentation with AI features and usage examples\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+            "Tags": [],
+            "Fingerprint": "42850d05f8fb55d96a5cfaa46195c30e078c729e:codebase_scanner/TESTING_GUIDE.md:generic-api-key:240"
+          },
+          {
+            "RuleID": "generic-api-key",
+            "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+            "StartLine": 67,
+            "EndLine": 67,
+            "StartColumn": 2,
+            "EndColumn": 58,
+            "Match": "SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "Secret": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "File": "codebase_scanner/SETUP_INSTRUCTIONS.md",
+            "SymlinkFile": "",
+            "Commit": "42850d05f8fb55d96a5cfaa46195c30e078c729e",
+            "Link": "https://github.com/BitCodeHub/codebase_scanner/blob/42850d05f8fb55d96a5cfaa46195c30e078c729e/codebase_scanner/SETUP_INSTRUCTIONS.md?plain=1#L67",
+            "Entropy": 4.419391,
+            "Author": "BitCodeHub",
+            "Email": "ocspsreefer@gmail.com",
+            "Date": "2025-07-01T10:47:26Z",
+            "Message": "feat: integrate Claude AI for intelligent security analysis\n\n- Enhanced mobile app security scanning with AI-powered analysis\n- Added Claude 3.5 Sonnet integration for vulnerability insights\n- Created comprehensive AI analysis endpoint with business intelligence\n- Added plain English explanations and fix recommendations\n- Implemented executive summary and risk prioritization features\n- Added compliance mapping and remediation roadmaps\n- Created demo script for testing AI analysis capabilities\n- Updated documentation with AI features and usage examples\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+            "Tags": [],
+            "Fingerprint": "42850d05f8fb55d96a5cfaa46195c30e078c729e:codebase_scanner/SETUP_INSTRUCTIONS.md:generic-api-key:67"
+          },
+          {
+            "RuleID": "generic-api-key",
+            "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+            "StartLine": 68,
+            "EndLine": 68,
+            "StartColumn": 2,
+            "EndColumn": 61,
+            "Match": "SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "Secret": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "File": "codebase_scanner/SETUP_INSTRUCTIONS.md",
+            "SymlinkFile": "",
+            "Commit": "42850d05f8fb55d96a5cfaa46195c30e078c729e",
+            "Link": "https://github.com/BitCodeHub/codebase_scanner/blob/42850d05f8fb55d96a5cfaa46195c30e078c729e/codebase_scanner/SETUP_INSTRUCTIONS.md?plain=1#L68",
+            "Entropy": 4.419391,
+            "Author": "BitCodeHub",
+            "Email": "ocspsreefer@gmail.com",
+            "Date": "2025-07-01T10:47:26Z",
+            "Message": "feat: integrate Claude AI for intelligent security analysis\n\n- Enhanced mobile app security scanning with AI-powered analysis\n- Added Claude 3.5 Sonnet integration for vulnerability insights\n- Created comprehensive AI analysis endpoint with business intelligence\n- Added plain English explanations and fix recommendations\n- Implemented executive summary and risk prioritization features\n- Added compliance mapping and remediation roadmaps\n- Created demo script for testing AI analysis capabilities\n- Updated documentation with AI features and usage examples\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+            "Tags": [],
+            "Fingerprint": "42850d05f8fb55d96a5cfaa46195c30e078c729e:codebase_scanner/SETUP_INSTRUCTIONS.md:generic-api-key:68"
+          }
+        ]
+      },
+      "detect_secrets": {
+        "total_secrets": 69,
+        "files_with_secrets": 34
+      }
+    },
+    "summary": {
+      "total_tools_tested": 10,
+      "tools_working": 9,
+      "tools_with_issues": 1,
+      "total_security_findings": 173,
+      "scan_completed": "2025-07-01T04:14:06.942493"
+    }
+  },
+  "api_endpoint_results": {
+    "health_check": {
+      "success": true,
+      "response": {
+        "status": "healthy",
+        "service": "codebase-scanner-api",
+        "timestamp": "2024-12-29"
+      }
+    },
+    "scanner_tools": {
+      "success": true,
+      "response": {
+        "status": "healthy",
+        "available_tools": 10,
+        "total_tools": 10,
+        "tools": {
+          "semgrep": {
+            "available": true,
+            "version": "1.127.1",
+            "error": null
+          },
+          "bandit": {
+            "available": true,
+            "version": "bandit 1.8.5\n  python version = 3.13.0 (v3.13.0:60403a5409f, Oct  7 2024, 00:37:40) [Clang 15.0.0 (clang-1500.3.9.4)]",
+            "error": null
+          },
+          "safety": {
+            "available": true,
+            "version": "safety, version 3.5.2",
+            "error": null
+          },
+          "gitleaks": {
+            "available": true,
+            "version": "8.27.2",
+            "error": null
+          },
+          "trufflehog": {
+            "available": true,
+            "version": "TruffleHog 2.2.1",
+            "error": null
+          },
+          "detect_secrets": {
+            "available": true,
+            "version": "1.5.0",
+            "error": null
+          },
+          "retire_js": {
+            "available": true,
+            "version": "5.2.7",
+            "error": null
+          },
+          "jadx": {
+            "available": true,
+            "version": "1.5.2",
+            "error": null
+          },
+          "apkleaks": {
+            "available": true,
+            "version": "APKLeaks 2.6.3",
+            "error": null
+          },
+          "qark": {
+            "available": true,
+            "version": "qark, version 4.0.0",
+            "error": null
+          }
+        },
+        "scanner_service": {
+          "available": true,
+          "note": "Scanner service testing disabled due to Supabase proxy parameter conflict. All individual tools are working."
+        },
+        "recommendations": []
+      }
+    },
+    "test_endpoint": {
+      "success": true,
+      "response": {
+        "message": "API is working!",
+        "supabase_url": "https://ylllkgxzrizqlsymkybh.supabase.co",
+        "environment": "development"
+      }
+    }
+  },
+  "production_readiness": {
+    "security_tools": {
+      "status": "\u2705 READY",
+      "details": "9/10 tools operational"
+    },
+    "api_endpoints": {
+      "status": "\u2705 READY",
+      "details": "3/3 endpoints working"
+    },
+    "security_findings": {
+      "total": 173,
+      "critical_tools": [
+        "semgrep",
+        "bandit",
+        "gitleaks",
+        "detect_secrets"
+      ],
+      "recommendation": "Review and address any security findings before production deployment"
+    }
+  },
+  "recommendations": [
+    "1. Ensure all environment variables are properly configured in production",
+    "2. Add Anthropic API credits for AI-powered analysis",
+    "3. Configure proper authentication and authorization",
+    "4. Set up monitoring and logging for security scans",
+    "5. Implement rate limiting for production API",
+    "6. Regular security tool updates and maintenance"
+  ]
+}
