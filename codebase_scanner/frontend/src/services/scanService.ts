@@ -57,18 +57,20 @@ export async function startRepositoryScan(
   projectId: string,
   options: RepositoryScanOptions
 ): Promise<{ scanId: string; message: string }> {
-  // Temporarily disable auth for debugging
-  // const { data: { user } } = await supabase.auth.getUser()
-  // if (!user) throw new Error('No user found')
-  const user = { id: 'test-user' } // Temporary fallback
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No user found')
 
   const { getFullApiUrl } = await import('../utils/api-config')
 
-  // Temporarily use no-auth endpoint for debugging
-  const response = await fetch(getFullApiUrl('/api/scans/repository-simple-no-auth'), {
+  // Use the standard endpoint with auth
+  const session = await supabase.auth.getSession()
+  const token = session.data.session?.access_token
+
+  const response = await fetch(getFullApiUrl('/api/scans/repository'), {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({
       project_id: projectId,

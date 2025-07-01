@@ -25,3 +25,5 @@
 {"timestamp": "2025-07-01T10:15:25.318002", "level": "ERROR", "logger": "src.database", "message": "Failed to create Supabase client: TypeError: Client.__init__() got an unexpected keyword argument 'proxy'", "module": "database", "function": "get_supabase_client", "line": 50}
 {"timestamp": "2025-07-01T10:50:06.518314", "level": "WARNING", "logger": "src.middleware.rate_limit", "message": "Rate limit exceeded for ip:127.0.0.1", "module": "rate_limit", "function": "__call__", "line": 134}
 {"timestamp": "2025-07-01T10:51:43.718431", "level": "WARNING", "logger": "src.middleware.rate_limit", "message": "Rate limit exceeded for ip:127.0.0.1", "module": "rate_limit", "function": "__call__", "line": 134}
+{"timestamp": "2025-07-01T11:01:01.219312", "level": "WARNING", "logger": "src.middleware.error_handler", "message": "HTTP exception: Method Not Allowed", "module": "error_handler", "function": "http_exception_handler", "line": 196}
+{"timestamp": "2025-07-01T11:04:06.107718", "level": "WARNING", "logger": "src.middleware.error_handler", "message": "HTTP exception: Not authenticated", "module": "error_handler", "function": "http_exception_handler", "line": 196}

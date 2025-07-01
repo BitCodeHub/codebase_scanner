@@ -26,6 +26,7 @@ origins = [
     "http://localhost:5173",  # Frontend development
     "http://127.0.0.1:5173",
     "https://localhost:5173",
+    "https://codebase-scanner-frontend.onrender.com",  # Production frontend
 ] + cors_origins
 
 # Remove empty strings from origins
@@ -921,6 +922,8 @@ async def generate_ai_security_insights(scan_results: dict, all_findings: list, 
     try:
         import anthropic
         import os
+        import json
+        from datetime import datetime
         
         # Check if Anthropic API key is configured
         api_key = os.getenv("ANTHROPIC_API_KEY")
