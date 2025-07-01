@@ -399,11 +399,11 @@ async def scan_repository_simple(request: dict):
         if not project_id:
             return {"error": "project_id is required"}
         
-        # Create scan data (repository_url stored in scan_config since column doesn't exist)
+        # Create scan data (using 'security' scan_type as 'repository' is not valid enum value)
         scan_data = {
             "project_id": int(project_id),
             "user_id": user_id,
-            "scan_type": "repository",
+            "scan_type": "security",  # Valid enum values: security, quality, performance, launch_ready, full
             "status": "pending",
             "triggered_by": "manual",
             "branch": branch,
@@ -429,7 +429,7 @@ async def scan_repository_simple(request: dict):
         return {
             "id": str(scan["id"]),
             "project_id": project_id,
-            "scan_type": scan_type,
+            "scan_type": "security",  # Return the actual scan_type used in database
             "status": "pending",
             "created_at": scan["created_at"],
             "repository_url": repository_url,  # Return in response even though not stored in DB

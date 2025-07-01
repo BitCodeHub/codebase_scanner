@@ -1,6 +1,9 @@
 -- Database migration to add missing columns for enhanced scanning
 -- Run this on your Supabase database to add repository scanning capabilities
 
+-- Extend scan_type enum to include repository scanning
+ALTER TYPE scan_type ADD VALUE IF NOT EXISTS 'repository';
+
 -- Add repository_url column to scans table
 ALTER TABLE scans ADD COLUMN IF NOT EXISTS repository_url VARCHAR(500);
 
