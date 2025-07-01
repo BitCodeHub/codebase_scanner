@@ -188,7 +188,17 @@ async def test_create_project(request: dict):
         
         # Get the supabase client
         try:
-            supabase = get_supabase_client()
+            # Direct initialization to avoid proxy parameter issue
+            import os
+            from supabase import create_client
+            url = os.getenv("SUPABASE_URL")
+            key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
+            
+            if not url or not key:
+                return {"error": "Supabase credentials not configured"}
+                
+            # Create client directly with minimal parameters
+            supabase = create_client(url, key)
         except Exception as e:
             return {"error": f"Failed to get Supabase client: {str(e)}"}
         
