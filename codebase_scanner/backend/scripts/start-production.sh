@@ -13,7 +13,6 @@ export WORKERS=1
 # Set uvicorn memory optimization flags
 export UVICORN_WORKERS=1
 export UVICORN_LIMIT_MAX_REQUESTS=1000
-export UVICORN_LIMIT_MAX_REQUESTS_JITTER=50
 
 # Configure memory limits for security tools
 export SEMGREP_MAX_MEMORY=256
@@ -37,6 +36,5 @@ exec uvicorn app.main:app \
     --no-access-log \
     --log-level ${LOG_LEVEL:-warning} \
     --limit-max-requests 1000 \
-    --limit-max-requests-jitter 50 \
     --timeout-keep-alive 5 \
     --timeout-graceful-shutdown 10
