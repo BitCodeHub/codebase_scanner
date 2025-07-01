@@ -161,7 +161,8 @@ export default function ProjectsPage() {
 
       // Test the direct endpoint
       if (userId) {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://codebase-scanner-backend.onrender.com'}/api/test/create-project`, {
+        const { getFullApiUrl } = await import('../utils/api-config')
+        const response = await fetch(getFullApiUrl('/api/test/create-project'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

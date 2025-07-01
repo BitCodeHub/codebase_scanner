@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { XIcon, UploadIcon, GitBranchIcon } from 'lucide-react'
 import LoadingSpinner from '../ui/LoadingSpinner'
-import { runtimeConfig } from '../../generated/config'
+import { getApiUrl, getFullApiUrl } from '../../utils/api-config'
 
 interface CreateProjectModalProps {
   onClose: () => void
@@ -35,7 +35,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
         hasToken: !!token,
         tokenPreview: token ? token.substring(0, 50) + '...' : 'No token',
         userId: user.data.user?.id,
-        apiUrl: runtimeConfig.apiUrl,
+        apiUrl: getApiUrl(),
         requestBody: {
           name: formData.name,
           description: formData.description,
@@ -49,10 +49,10 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
       }
 
       // Use the backend API to create the project
-      const apiUrl = `${runtimeConfig.apiUrl || 'https://codebase-scanner-backend.onrender.com'}/api/projects/`
+      const apiUrl = getFullApiUrl('/api/projects/')
       debug.apiUrl = apiUrl
-      debug.configApiUrl = runtimeConfig.apiUrl
-      debug.fallbackApiUrl = 'https://codebase-scanner-backend.onrender.com'
+      debug.detectedApiBase = getApiUrl()
+      debug.isProduction = window.location.hostname.includes('onrender.com')
       
       const response = await fetch(apiUrl, {
         method: 'POST',

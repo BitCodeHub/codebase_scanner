@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { runtimeConfig } from '../generated/config'
+import { getApiUrl, getFullApiUrl } from '../utils/api-config'
 
 export default function DebugPage() {
   const [authStatus, setAuthStatus] = useState<any>({})
@@ -33,15 +33,15 @@ export default function DebugPage() {
     setLoading(true)
     try {
       // Test basic API endpoint
-      const response = await fetch(`${runtimeConfig.apiUrl}/api/test`)
+      const response = await fetch(getFullApiUrl('/api/test'))
       const data = await response.json()
       
       // Test Supabase connection
-      const supabaseResponse = await fetch(`${runtimeConfig.apiUrl}/api/supabase/test`)
+      const supabaseResponse = await fetch(getFullApiUrl('/api/supabase/test'))
       const supabaseData = await supabaseResponse.json()
       
       setApiStatus({
-        apiUrl: runtimeConfig.apiUrl,
+        apiUrl: getApiUrl(),
         basicTest: data,
         supabaseTest: supabaseData
       })
@@ -63,7 +63,7 @@ export default function DebugPage() {
       }
 
       // Test auth debug endpoint
-      const debugResponse = await fetch(`${runtimeConfig.apiUrl}/api/auth/debug`, {
+      const debugResponse = await fetch(getFullApiUrl('/api/auth/debug'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -91,7 +91,7 @@ export default function DebugPage() {
       }
 
       // Test project creation
-      const response = await fetch(`${runtimeConfig.apiUrl}/api/projects/`, {
+      const response = await fetch(getFullApiUrl('/api/projects/'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -136,7 +136,7 @@ export default function DebugPage() {
       }
 
       // Test project list
-      const response = await fetch(`${runtimeConfig.apiUrl}/api/projects/`, {
+      const response = await fetch(getFullApiUrl('/api/projects/'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -168,7 +168,7 @@ export default function DebugPage() {
       }
 
       // Test direct project creation without auth
-      const response = await fetch(`${runtimeConfig.apiUrl}/api/test/create-project`, {
+      const response = await fetch(getFullApiUrl('/api/test/create-project'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -203,9 +203,9 @@ export default function DebugPage() {
         <h2 className="text-lg font-semibold mb-2">Configuration</h2>
         <pre className="text-xs overflow-auto">
           {JSON.stringify({
-            apiUrl: runtimeConfig.apiUrl,
-            supabaseUrl: runtimeConfig.supabaseUrl,
-            environment: runtimeConfig.environment
+            apiUrl: getApiUrl(),
+            windowLocation: window.location.hostname,
+            isProduction: window.location.hostname.includes('onrender.com')
           }, null, 2)}
         </pre>
       </div>
