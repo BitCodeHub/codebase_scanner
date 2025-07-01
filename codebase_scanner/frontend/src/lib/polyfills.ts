@@ -73,6 +73,33 @@ if (typeof process === 'undefined') {
   (window as any).process = { env: {} };
 }
 
+// Ensure XMLHttpRequest is available (some libraries use it as fallback)
+if (typeof XMLHttpRequest !== 'undefined') {
+  if (!(globalThis as any).XMLHttpRequest) {
+    (globalThis as any).XMLHttpRequest = XMLHttpRequest;
+  }
+}
+
+// Ensure AbortController is available
+if (typeof AbortController !== 'undefined') {
+  if (!(globalThis as any).AbortController) {
+    (globalThis as any).AbortController = AbortController;
+  }
+  if (!(window as any).AbortController) {
+    (window as any).AbortController = AbortController;
+  }
+}
+
+// Ensure crypto is available
+if (typeof crypto !== 'undefined') {
+  if (!(globalThis as any).crypto) {
+    (globalThis as any).crypto = crypto;
+  }
+  if (!(window as any).crypto) {
+    (window as any).crypto = crypto;
+  }
+}
+
 // Log what's available
 console.log('Polyfills applied. Available globals:', {
   Headers: typeof Headers !== 'undefined',

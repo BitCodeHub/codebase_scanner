@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { supabase } from './lib/supabase'
 import { Session } from '@supabase/supabase-js'
 import { runSupabaseDiagnostics, testHardcodedSupabase } from './lib/supabase-diagnostic'
+import { testSupabaseInit } from './lib/test-supabase'
+import { testDirectInit } from './lib/supabase-direct'
 
 // Components
 import Layout from './components/layout/Layout'
@@ -24,6 +26,8 @@ function App() {
       console.log('=== Running Supabase Diagnostics ===');
       await runSupabaseDiagnostics();
       await testHardcodedSupabase();
+      await testSupabaseInit();
+      testDirectInit();
       console.log('=== End Diagnostics ===');
     };
     runDiagnostics();

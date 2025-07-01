@@ -44,13 +44,23 @@ export function initializeSupabase() {
       return client;
     } catch (innerError) {
       console.error('Inner error creating client:', innerError);
+      
       // Try with empty options object
-      const client = createClient(url, key, {});
-      console.log('Supabase client created with empty options');
-      return client;
+      try {
+        const client = createClient(url, key, {});
+        console.log('Supabase client created with empty options');
+        return client;
+      } catch (secondError) {
+        console.error('Second error creating client:', secondError);
+        
+        // If all else fails, return null and use mock
+        console.warn('All Supabase initialization attempts failed. Using mock client.');
+        return null;
+      }
     }
   } catch (error) {
     console.error('Failed to create Supabase client:', error);
+    console.warn('Falling back to mock client due to initialization error');
     return null;
   }
 }

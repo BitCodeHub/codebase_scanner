@@ -32,12 +32,46 @@ export function createClient<T = Database>(url: string, key: string, options?: a
   console.log('Creating Supabase client with patched globals');
   
   try {
-    // Try creating with provided options
-    if (options) {
-      return originalCreateClient<T>(url, key, options);
-    }
-    // Try without options
-    return originalCreateClient<T>(url, key);
+    // Provide default options with auth configuration
+    const defaultOptions = {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        storage: {
+          getItem: (key: string) => {
+            try {
+              return window.localStorage.getItem(key);
+            } catch {
+              return null;
+            }
+          },
+          setItem: (key: string, value: string) => {
+            try {
+              window.localStorage.setItem(key, value);
+            } catch {
+              // Ignore storage errors
+            }
+          },
+          removeItem: (key: string) => {
+            try {
+              window.localStorage.removeItem(key);
+            } catch {
+              // Ignore storage errors
+            }
+          },
+        },
+      },
+      global: {
+        headers: {},
+        fetch: requiredGlobals.fetch,
+      },
+    };
+
+    const finalOptions = options ? { ...defaultOptions, ...options } : defaultOptions;
+    
+    console.log('Creating client with options:', finalOptions);
+    return originalCreateClient<T>(url, key, finalOptions);
   } catch (error: any) {
     console.error('Failed to create Supabase client:', error);
     
@@ -47,6 +81,12 @@ export function createClient<T = Database>(url: string, key: string, options?: a
       console.log('globalThis:', globalThis);
       console.log('globalThis.Headers:', (globalThis as any).Headers);
       console.log('window.Headers:', (window as any).Headers);
+      console.log('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        url,
+        keyLength: key?.length,
+      });
     }
     
     throw error;
