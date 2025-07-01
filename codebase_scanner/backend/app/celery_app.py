@@ -5,14 +5,27 @@ import os
 import sys
 from celery import Celery
 from celery.signals import setup_logging
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Don't load dotenv on production - Render provides env vars directly
+if os.getenv('RENDER') != 'true':
+    from dotenv import load_dotenv
+    load_dotenv()
 
 # Get Redis URL from environment
 redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-print(f"[Celery Config] REDIS_URL from env: {redis_url}", file=sys.stderr)
+
+# Ensure Redis URL has a database number if it doesn't
+if redis_url and not redis_url.endswith('/0'):
+    if '?' in redis_url:
+        # If there are query parameters, insert /0 before them
+        parts = redis_url.split('?')
+        redis_url = parts[0] + '/0?' + parts[1]
+    else:
+        # Otherwise just append /0
+        redis_url = redis_url + '/0'
+
+print(f"[Celery Config] REDIS_URL from env: {os.getenv('REDIS_URL')}", file=sys.stderr)
+print(f"[Celery Config] REDIS_URL for Celery: {redis_url}", file=sys.stderr)
 print(f"[Celery Config] All env vars with REDIS: {[k for k in os.environ.keys() if 'REDIS' in k]}", file=sys.stderr)
 
 # Create Celery instance
