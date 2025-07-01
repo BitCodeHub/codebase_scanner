@@ -15,97 +15,7 @@ import { supabase } from '../lib/supabase'
 import AIAnalysisPanel from '../components/ai/AIAnalysisPanel'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 
-// Mock data for demonstration
-const mockScanResults = {
-  id: '1',
-  project_name: 'My Web Application',
-  scan_type: 'security',
-  status: 'completed',
-  created_at: new Date().toISOString(),
-  completed_at: new Date().toISOString(),
-  total_issues: 5,
-  critical_issues: 1,
-  high_issues: 2,
-  medium_issues: 1,
-  low_issues: 1,
-  results: [
-    {
-      id: 'vuln-1',
-      rule_id: 'CWE-89',
-      title: 'SQL Injection',
-      description: 'User input is concatenated directly into SQL query without proper sanitization',
-      severity: 'critical',
-      category: 'Injection',
-      vulnerability_type: 'SQL Injection',
-      owasp_category: 'A03:2021 – Injection',
-      file_path: 'src/api/users.py',
-      line_number: 45,
-      code_snippet: 'query = f"SELECT * FROM users WHERE id = {user_id}"',
-      confidence: 'high',
-      language: 'python'
-    },
-    {
-      id: 'vuln-2',
-      rule_id: 'CWE-79',
-      title: 'Cross-Site Scripting (XSS)',
-      description: 'User input is rendered in HTML without proper escaping',
-      severity: 'high',
-      category: 'Injection',
-      vulnerability_type: 'XSS',
-      owasp_category: 'A03:2021 – Injection',
-      file_path: 'src/templates/profile.html',
-      line_number: 23,
-      code_snippet: '<div>Welcome {{ username }}</div>',
-      confidence: 'high',
-      language: 'html'
-    },
-    {
-      id: 'vuln-3',
-      rule_id: 'CWE-798',
-      title: 'Hardcoded Credentials',
-      description: 'Database password is hardcoded in the source code',
-      severity: 'high',
-      category: 'Authentication',
-      vulnerability_type: 'Hardcoded Secret',
-      owasp_category: 'A07:2021 – Identification and Authentication Failures',
-      file_path: 'src/config.py',
-      line_number: 12,
-      code_snippet: 'DB_PASSWORD = "admin123"',
-      confidence: 'high',
-      language: 'python'
-    },
-    {
-      id: 'vuln-4',
-      rule_id: 'CWE-209',
-      title: 'Information Exposure Through Error Messages',
-      description: 'Detailed error messages may reveal system information',
-      severity: 'medium',
-      category: 'Information Disclosure',
-      vulnerability_type: 'Information Leak',
-      owasp_category: 'A05:2021 – Security Misconfiguration',
-      file_path: 'src/api/errors.py',
-      line_number: 67,
-      code_snippet: 'return {"error": str(e), "traceback": traceback.format_exc()}',
-      confidence: 'medium',
-      language: 'python'
-    },
-    {
-      id: 'vuln-5',
-      rule_id: 'CWE-311',
-      title: 'Missing Encryption of Sensitive Data',
-      description: 'Sensitive data transmitted without encryption',
-      severity: 'low',
-      category: 'Cryptography',
-      vulnerability_type: 'Missing Encryption',
-      owasp_category: 'A02:2021 – Cryptographic Failures',
-      file_path: 'src/api/auth.py',
-      line_number: 89,
-      code_snippet: 'http://api.example.com/login',
-      confidence: 'low',
-      language: 'python'
-    }
-  ]
-}
+// No more mock data - we only show real scan results
 
 export default function ScanResults() {
   const { id } = useParams()
@@ -166,8 +76,8 @@ export default function ScanResults() {
       setScan(fullScanData)
     } catch (error) {
       console.error('Error loading scan data:', error)
-      // Fall back to mock data for demo purposes
-      setScan(mockScanResults)
+      // Show error state instead of mock data
+      setScan(null)
     } finally {
       setLoading(false)
     }
@@ -285,7 +195,7 @@ export default function ScanResults() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Total Issues</p>
-                <p className="text-2xl font-bold text-gray-900">{scan.total_issues}</p>
+                <p className="text-2xl font-bold text-gray-900">{scan.total_issues || scan.results?.length || 0}</p>
               </div>
               <Shield className="h-8 w-8 text-gray-400" />
             </div>
@@ -295,7 +205,7 @@ export default function ScanResults() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-red-600">Critical</p>
-                <p className="text-2xl font-bold text-red-600">{scan.critical_issues}</p>
+                <p className="text-2xl font-bold text-red-600">{scan.critical_issues || scan.results?.filter((r: any) => r.severity === 'critical').length || 0}</p>
               </div>
               <XCircle className="h-8 w-8 text-red-400" />
             </div>
@@ -305,7 +215,7 @@ export default function ScanResults() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-orange-600">High</p>
-                <p className="text-2xl font-bold text-orange-600">{scan.high_issues}</p>
+                <p className="text-2xl font-bold text-orange-600">{scan.high_issues || scan.results?.filter((r: any) => r.severity === 'high').length || 0}</p>
               </div>
               <AlertTriangle className="h-8 w-8 text-orange-400" />
             </div>
@@ -315,7 +225,7 @@ export default function ScanResults() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-yellow-600">Medium</p>
-                <p className="text-2xl font-bold text-yellow-600">{scan.medium_issues}</p>
+                <p className="text-2xl font-bold text-yellow-600">{scan.medium_issues || scan.results?.filter((r: any) => r.severity === 'medium').length || 0}</p>
               </div>
               <AlertTriangle className="h-8 w-8 text-yellow-400" />
             </div>
@@ -325,7 +235,7 @@ export default function ScanResults() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-blue-600">Low</p>
-                <p className="text-2xl font-bold text-blue-600">{scan.low_issues}</p>
+                <p className="text-2xl font-bold text-blue-600">{scan.low_issues || scan.results?.filter((r: any) => r.severity === 'low').length || 0}</p>
               </div>
               <Shield className="h-8 w-8 text-blue-400" />
             </div>
@@ -339,51 +249,68 @@ export default function ScanResults() {
           </div>
           
           <div className="divide-y divide-gray-200">
-            {scan.results.map((result: any) => (
-              <div key={result.id} className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start">
-                    <div className={`p-2 rounded-lg ${getSeverityColor(result.severity)} mr-4`}>
-                      {getSeverityIcon(result.severity)}
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                        {result.title}
-                        {analyzedVulnerabilities.has(result.id) && (
-                          <CheckCircle className="h-4 w-4 text-green-500 ml-2" />
-                        )}
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {result.rule_id} • {result.owasp_category}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-2">{result.description}</p>
-                      
-                      <div className="flex items-center mt-3 text-sm text-gray-500">
-                        <FileCode className="h-4 w-4 mr-1" />
-                        <span className="font-mono">{result.file_path}:{result.line_number}</span>
+            {scan.results && scan.results.length > 0 ? (
+              scan.results.map((result: any) => (
+                <div key={result.id} className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start">
+                      <div className={`p-2 rounded-lg ${getSeverityColor(result.severity)} mr-4`}>
+                        {getSeverityIcon(result.severity)}
                       </div>
-                      
-                      {result.code_snippet && (
-                        <pre className="mt-3 p-3 bg-gray-900 text-gray-100 rounded-lg text-sm overflow-x-auto">
-                          <code>{result.code_snippet}</code>
-                        </pre>
-                      )}
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                          {result.title}
+                          {analyzedVulnerabilities.has(result.id) && (
+                            <CheckCircle className="h-4 w-4 text-green-500 ml-2" />
+                          )}
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {result.rule_id} • {result.owasp_category}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-2">{result.description}</p>
+                        
+                        <div className="flex items-center mt-3 text-sm text-gray-500">
+                          <FileCode className="h-4 w-4 mr-1" />
+                          <span className="font-mono">{result.file_path}:{result.line_number}</span>
+                        </div>
+                        
+                        {result.code_snippet && (
+                          <pre className="mt-3 p-3 bg-gray-900 text-gray-100 rounded-lg text-sm overflow-x-auto">
+                            <code>{result.code_snippet}</code>
+                          </pre>
+                        )}
+                      </div>
                     </div>
+                    
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getSeverityColor(result.severity)}`}>
+                      {result.severity.toUpperCase()}
+                    </span>
                   </div>
                   
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getSeverityColor(result.severity)}`}>
-                    {result.severity.toUpperCase()}
-                  </span>
+                  {/* AI Analysis Panel */}
+                  <AIAnalysisPanel 
+                    vulnerability={result}
+                    scanId={scan.id}
+                    onAnalysisComplete={() => handleAnalysisComplete(result.id)}
+                  />
                 </div>
-                
-                {/* AI Analysis Panel */}
-                <AIAnalysisPanel 
-                  vulnerability={result}
-                  scanId={scan.id}
-                  onAnalysisComplete={() => handleAnalysisComplete(result.id)}
-                />
+              ))
+            ) : (
+              <div className="p-12 text-center">
+                <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No vulnerabilities found!</h3>
+                <p className="text-gray-500">
+                  {scan.status === 'completed' 
+                    ? 'Great! The security scan completed successfully with no issues detected.'
+                    : scan.status === 'running' 
+                    ? 'Scan is still running. Check back in a few minutes.'
+                    : scan.status === 'failed'
+                    ? 'Scan failed. Please try running a new scan.'
+                    : 'Scan is pending. Real security analysis will begin shortly.'
+                  }
+                </p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
