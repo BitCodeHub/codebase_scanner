@@ -207,6 +207,94 @@ async def test_list_projects():
     except Exception as e:
         return {"error": f"Failed to list projects: {str(e)}"}
 
+@app.get("/api/test/scanner-tools")
+async def test_scanner_tools():
+    """Test if all security scanning tools are available"""
+    try:
+        import subprocess
+        import os
+        
+        tools_status = {}
+        
+        # Test Semgrep
+        try:
+            result = subprocess.run(['semgrep', '--version'], capture_output=True, text=True, timeout=10)
+            tools_status['semgrep'] = {
+                'available': result.returncode == 0,
+                'version': result.stdout.strip() if result.returncode == 0 else None,
+                'error': result.stderr if result.returncode != 0 else None
+            }
+        except Exception as e:
+            tools_status['semgrep'] = {'available': False, 'error': str(e)}
+        
+        # Test Bandit
+        try:
+            result = subprocess.run(['bandit', '--version'], capture_output=True, text=True, timeout=10)
+            tools_status['bandit'] = {
+                'available': result.returncode == 0,
+                'version': result.stdout.strip() if result.returncode == 0 else None,
+                'error': result.stderr if result.returncode != 0 else None
+            }
+        except Exception as e:
+            tools_status['bandit'] = {'available': False, 'error': str(e)}
+        
+        # Test Safety
+        try:
+            result = subprocess.run(['safety', '--version'], capture_output=True, text=True, timeout=10)
+            tools_status['safety'] = {
+                'available': result.returncode == 0,
+                'version': result.stdout.strip() if result.returncode == 0 else None,
+                'error': result.stderr if result.returncode != 0 else None
+            }
+        except Exception as e:
+            tools_status['safety'] = {'available': False, 'error': str(e)}
+        
+        # Test Gitleaks
+        try:
+            result = subprocess.run(['gitleaks', 'version'], capture_output=True, text=True, timeout=10)
+            tools_status['gitleaks'] = {
+                'available': result.returncode == 0,
+                'version': result.stdout.strip() if result.returncode == 0 else None,
+                'error': result.stderr if result.returncode != 0 else None
+            }
+        except Exception as e:
+            tools_status['gitleaks'] = {'available': False, 'error': str(e)}
+        
+        # Check if scanner service can be initialized
+        scanner_service_status = {'available': False, 'error': None}
+        try:
+            # Try to import and initialize scanner service
+            from app.services.scanner_service import ScannerService
+            from src.database import get_supabase_client
+            
+            service = ScannerService(
+                supabase_client=get_supabase_client(),
+                temp_dir=os.getenv("TEMP_DIR", "/tmp/scans")
+            )
+            scanner_service_status['available'] = True
+            scanner_service_status['scanners_count'] = len(service.scanners)
+        except Exception as e:
+            scanner_service_status['error'] = str(e)
+        
+        # Calculate overall status
+        available_tools = sum(1 for tool in tools_status.values() if tool['available'])
+        total_tools = len(tools_status)
+        
+        return {
+            "status": "healthy" if available_tools == total_tools else "partial",
+            "available_tools": available_tools,
+            "total_tools": total_tools,
+            "tools": tools_status,
+            "scanner_service": scanner_service_status,
+            "recommendations": [
+                "Install missing tools using: pip install semgrep bandit safety",
+                "Install gitleaks binary: https://github.com/gitleaks/gitleaks#installation"
+            ] if available_tools < total_tools else []
+        }
+        
+    except Exception as e:
+        return {"error": f"Failed to test scanner tools: {str(e)}"}
+
 @app.post("/api/test/start-scan")
 async def test_start_scan(request: dict):
     """Test scan creation without complex dependencies"""

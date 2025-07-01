@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import CreateProjectModal from '../components/forms/CreateProjectModal'
-import { simulateScan, startRepositoryScan } from '../services/scanService'
+import { startRepositoryScan } from '../services/scanService'
 import { listProjects, Project } from '../services/projectService'
 
 interface ProjectWithStats extends Project {
@@ -93,7 +93,7 @@ export default function ProjectsPage() {
   const handleScan = async (projectId: string) => {
     try {
       setScanningProject(projectId)
-      console.log('Starting scan for project:', projectId)
+      console.log('Starting real security scan for project:', projectId)
       
       // Find the project to check if it has a repository URL
       const project = projects.find(p => p.id === projectId)
@@ -102,44 +102,33 @@ export default function ProjectsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No user found')
 
-      console.log('Creating scan record for project ID:', projectId, 'User ID:', user.id)
+      console.log('Starting real scan for project ID:', projectId, 'User ID:', user.id)
 
-      // Use the test endpoint to create scan without complex dependencies
-      const { getFullApiUrl } = await import('../utils/api-config')
-      const response = await fetch(getFullApiUrl('/api/test/start-scan'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          project_id: projectId,
-          user_id: user.id
+      let scanResult;
+
+      if (project.repository_url) {
+        // Use real repository scanning for GitHub repos
+        console.log('Starting repository scan for:', project.repository_url)
+        scanResult = await startRepositoryScan(projectId, {
+          repositoryUrl: project.repository_url,
+          branch: 'main',
+          scanType: 'comprehensive'
         })
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      } else {
+        // For projects without repos, show a file upload dialog
+        // For now, let's create a comprehensive scan of a demo repository
+        console.log('No repository URL found, using demo repository scan')
+        scanResult = await startRepositoryScan(projectId, {
+          repositoryUrl: 'https://github.com/OWASP/NodeGoat',
+          branch: 'main', 
+          scanType: 'comprehensive'
+        })
       }
 
-      const result = await response.json()
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to create scan')
-      }
-
-      console.log('Scan created successfully:', result.scan)
-
-      // Start the scan simulation
-      simulateScan(result.scan.id, projectId).then(() => {
-        console.log('Scan simulation completed')
-        // Reload projects to update scan count
-        loadProjects()
-      }).catch(err => {
-        console.error('Scan simulation failed:', err)
-      })
+      console.log('Real scan initiated:', scanResult)
 
       // Navigate to the scan results page
-      navigate(`/scans/${result.scan.id}/results`)
+      navigate(`/scans/${scanResult.scanId}/results`)
     } catch (error) {
       console.error('Error starting scan:', error)
       alert(`Failed to start scan: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -154,6 +143,31 @@ export default function ProjectsPage() {
         <LoadingSpinner size="lg" className="h-64" />
       </div>
     )
+  }
+
+  const testScannerTools = async () => {
+    try {
+      const { getFullApiUrl } = await import('../utils/api-config')
+      
+      // Test scanner tools availability
+      const toolsResponse = await fetch(getFullApiUrl('/api/test/scanner-tools'))
+      const toolsResult = await toolsResponse.json()
+      
+      setDebugInfo({
+        timestamp: new Date().toISOString(),
+        scannerToolsStatus: toolsResult,
+        message: toolsResult.status === 'healthy' 
+          ? '✅ All scanning tools are ready!' 
+          : '⚠️ Some scanning tools need installation'
+      })
+      setShowDebug(true)
+    } catch (error) {
+      setDebugInfo({ 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        message: '❌ Failed to check scanner tools'
+      })
+      setShowDebug(true)
+    }
   }
 
   const testDirectCreate = async () => {
@@ -231,6 +245,12 @@ export default function ProjectsPage() {
           <p className="text-gray-600 mt-2">Manage your security scanning projects</p>
         </div>
         <div className="flex space-x-2">
+          <button
+            onClick={testScannerTools}
+            className="btn-secondary flex items-center"
+          >
+            🔧 Scanner Tools
+          </button>
           <button
             onClick={testDirectCreate}
             className="btn-secondary flex items-center"
