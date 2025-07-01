@@ -76,8 +76,8 @@ services:
   - type: worker
     name: codebase-scanner-worker
     runtime: python
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && python start_worker.py
+    buildCommand: pip install --no-cache-dir -r backend/requirements-worker.txt
+    startCommand: cd backend && python worker_start.py
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"

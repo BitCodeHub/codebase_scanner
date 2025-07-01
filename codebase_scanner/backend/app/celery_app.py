@@ -36,19 +36,25 @@ celery_app = Celery(
     include=["app.tasks.scan_tasks", "app.tasks.ai_tasks"]
 )
 
-# Celery configuration
+# Celery configuration - optimized for low memory
 celery_app.conf.update(
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
-    result_expires=3600,  # Results expire after 1 hour
+    result_expires=1800,  # Results expire after 30 minutes
     task_track_started=True,
     task_time_limit=1800,  # 30 minutes max per task
     task_soft_time_limit=1500,  # 25 minutes soft limit
     worker_prefetch_multiplier=1,  # Disable prefetching for long tasks
-    worker_max_tasks_per_child=10,  # Restart worker after 10 tasks
+    worker_max_tasks_per_child=1,  # Restart worker after each task to free memory
+    worker_disable_rate_limits=True,  # Save memory by disabling rate limits
+    task_compression="gzip",  # Compress task data to save memory
+    result_compression="gzip",  # Compress results to save memory
+    broker_connection_retry_on_startup=True,
+    broker_connection_retry=True,
+    broker_connection_max_retries=10,
 )
 
 # Configure queues
