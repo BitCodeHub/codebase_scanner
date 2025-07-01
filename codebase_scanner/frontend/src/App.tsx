@@ -20,7 +20,7 @@ function App() {
 
   useEffect(() => {
     // Subscribe to auth state changes
-    const unsubscribe = subscribeToAuthState((state) => {
+    const unsubscribe = subscribeToAuthState((state: { session: Session | null; loading: boolean; error: Error | null }) => {
       setSession(state.session)
       setLoading(state.loading)
       setError(state.error)
