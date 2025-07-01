@@ -123,6 +123,62 @@ async def test_supabase():
             }
         )
 
+@app.post("/api/auth/debug")
+async def debug_auth(request: dict):
+    """Debug authentication token"""
+    try:
+        import json
+        import base64
+        
+        token = request.get("token", "")
+        if not token:
+            return {"error": "No token provided"}
+        
+        # Try to decode the JWT without verification
+        parts = token.split('.')
+        if len(parts) != 3:
+            return {"error": "Invalid token format", "parts": len(parts)}
+        
+        # Decode header and payload
+        header = json.loads(base64.urlsafe_b64decode(parts[0] + '=='))
+        payload = json.loads(base64.urlsafe_b64decode(parts[1] + '=='))
+        
+        # Try to verify with Supabase
+        from src.database import get_supabase_client
+        supabase = get_supabase_client()
+        
+        verification_result = "Not tested"
+        user_info = None
+        
+        if supabase:
+            try:
+                user_response = supabase.auth.get_user(token)
+                if user_response and user_response.user:
+                    verification_result = "Valid"
+                    user_info = {
+                        "id": user_response.user.id,
+                        "email": user_response.user.email,
+                        "created_at": user_response.user.created_at
+                    }
+                else:
+                    verification_result = "Invalid"
+            except Exception as e:
+                verification_result = f"Error: {str(e)}"
+        
+        return {
+            "token_header": header,
+            "token_payload": payload,
+            "supabase_verification": verification_result,
+            "user_info": user_info,
+            "user_id": payload.get("sub"),
+            "email": payload.get("email"),
+            "exp": payload.get("exp"),
+            "iat": payload.get("iat")
+        }
+        
+    except Exception as e:
+        return {"error": str(e), "token_preview": token[:50] + "..." if len(token) > 50 else token}
+
 # Include API routes
 try:
     from src.api.ai_analysis import router as ai_router
