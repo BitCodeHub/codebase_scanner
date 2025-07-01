@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { supabase } from './lib/supabase'
+import { subscribeToAuthState } from './lib/supabase-init'
 import { Session } from '@supabase/supabase-js'
-// Diagnostic imports removed - using mock client due to bundling issue
 
 // Components
 import Layout from './components/layout/Layout'
@@ -17,23 +16,17 @@ import LoadingSpinner from './components/ui/LoadingSpinner'
 function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }: { data: { session: any } }) => {
-      setSession(session)
-      setLoading(false)
+    // Subscribe to auth state changes
+    const unsubscribe = subscribeToAuthState((state) => {
+      setSession(state.session)
+      setLoading(state.loading)
+      setError(state.error)
     })
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      setSession(session)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
+    return unsubscribe
   }, [])
 
   if (loading) {

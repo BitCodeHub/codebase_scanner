@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { getSupabase } from '../lib/supabase-init'
 import { ShieldCheckIcon, EyeIcon, EyeOffIcon } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 
@@ -17,6 +17,8 @@ export default function AuthPage() {
     setMessage('')
 
     try {
+      const supabase = await getSupabase()
+      
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
           email,
@@ -32,7 +34,7 @@ export default function AuthPage() {
         if (error) throw error
       }
     } catch (error: any) {
-      setMessage(error.message)
+      setMessage(error.message || 'Authentication failed')
     } finally {
       setLoading(false)
     }
