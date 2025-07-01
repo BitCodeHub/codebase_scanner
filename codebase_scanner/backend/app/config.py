@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     supabase_service_key: Optional[str] = Field(default=None, env="SUPABASE_SERVICE_KEY")
     
     # Redis for background tasks
-    redis_url: str = Field(default="redis://localhost:6379", env="REDIS_URL")
+    redis_url: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
     
     # File Upload
     upload_dir: str = Field(default="uploads", env="UPLOAD_DIR")
@@ -51,6 +51,10 @@ class Settings(BaseSettings):
         # Check for SUPABASE_SERVICE_ROLE_KEY if SUPABASE_SERVICE_KEY is not set
         if not self.supabase_service_key and os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
             self.supabase_service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        
+        # Ensure Redis URL has database number for Celery compatibility
+        if self.redis_url and not any(self.redis_url.endswith(f'/{i}') for i in range(16)):
+            self.redis_url = self.redis_url.rstrip('/') + '/0'
         
         # Ensure upload directory exists
         os.makedirs(self.upload_dir, exist_ok=True)
