@@ -18,6 +18,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [debugInfo, setDebugInfo] = useState<any>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,14 +27,34 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
 
     try {
       const session = await supabase.auth.getSession()
+      const user = await supabase.auth.getUser()
       const token = session.data.session?.access_token
       
+      // Debug information
+      const debug: any = {
+        hasToken: !!token,
+        tokenPreview: token ? token.substring(0, 50) + '...' : 'No token',
+        userId: user.data.user?.id,
+        apiUrl: runtimeConfig.apiUrl,
+        requestBody: {
+          name: formData.name,
+          description: formData.description,
+          repository_url: formData.source_type === 'github' ? formData.github_repo_url : null
+        }
+      }
+      
       if (!token) {
+        setDebugInfo({ ...debug, error: 'No authentication token' })
         throw new Error('User not authenticated')
       }
 
       // Use the backend API to create the project
-      const response = await fetch(`${runtimeConfig.apiUrl}/api/projects/`, {
+      const apiUrl = `${runtimeConfig.apiUrl || 'https://codebase-scanner-backend.onrender.com'}/api/projects/`
+      debug.apiUrl = apiUrl
+      debug.configApiUrl = runtimeConfig.apiUrl
+      debug.fallbackApiUrl = 'https://codebase-scanner-backend.onrender.com'
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -46,14 +67,30 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
         })
       })
 
+      const responseText = await response.text()
+      let responseData
+      try {
+        responseData = JSON.parse(responseText)
+      } catch {
+        responseData = { rawResponse: responseText }
+      }
+
+      debug.responseStatus = response.status
+      debug.responseHeaders = Object.fromEntries(response.headers.entries())
+      debug.responseData = responseData
+
+      setDebugInfo(debug)
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to create project')
+        throw new Error(responseData.detail || responseData.error || `Failed to create project: ${response.status}`)
       }
 
       onSuccess()
     } catch (error: any) {
       setError(error.message)
+      if (!debugInfo) {
+        setDebugInfo({ error: error.message, stack: error.stack })
+      }
     } finally {
       setLoading(false)
     }
@@ -183,6 +220,14 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md">
               <p className="text-sm text-red-600">{error}</p>
+              {debugInfo && (
+                <details className="mt-2">
+                  <summary className="text-xs text-gray-600 cursor-pointer">Debug Information</summary>
+                  <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto max-h-40">
+                    {JSON.stringify(debugInfo, null, 2)}
+                  </pre>
+                </details>
+              )}
             </div>
           )}
 
