@@ -399,14 +399,13 @@ async def scan_repository_simple(request: dict):
         if not project_id:
             return {"error": "project_id is required"}
         
-        # Create scan data
+        # Create scan data (repository_url stored in scan_config since column doesn't exist)
         scan_data = {
             "project_id": int(project_id),
             "user_id": user_id,
             "scan_type": "repository",
             "status": "pending",
             "triggered_by": "manual",
-            "repository_url": repository_url,
             "branch": branch,
             "scan_config": {
                 "scanType": scan_type,
@@ -433,7 +432,7 @@ async def scan_repository_simple(request: dict):
             "scan_type": scan_type,
             "status": "pending",
             "created_at": scan["created_at"],
-            "repository_url": repository_url,
+            "repository_url": repository_url,  # Return in response even though not stored in DB
             "branch": branch,
             "message": "Repository scan initiated successfully"
         }
