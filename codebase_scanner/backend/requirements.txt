@@ -5,7 +5,7 @@ python-multipart==0.0.6
 aiofiles==23.2.1
 
 # Database and ORM
-supabase==2.10.0
+supabase==2.7.0
 psycopg2-binary==2.9.9
 sqlalchemy==2.0.23
 
@@ -44,7 +44,7 @@ zipfile38==0.0.3
 pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
-httpx==0.24.1
+httpx>=0.26,<0.28
 
 # Logging and monitoring
 structlog==23.2.0
