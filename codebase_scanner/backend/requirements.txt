@@ -21,12 +21,15 @@ anthropic>=0.40.0,<0.41.0
 celery>=5.3.0,<5.4.0
 redis>=5.0.0,<5.1.0
 
-# Security scanning tools
-semgrep>=1.52.0,<1.53.0
-bandit>=1.7.0,<1.8.0
-safety>=3.2.0,<3.3.0
-# Note: TruffleHog v3 should be installed via brew: brew install trufflehog
-# The Python version (truffleHog==2.2.1) has compatibility issues with Python 3.13
+# Security scanning tools - Updated to match development versions
+semgrep>=1.127.0,<1.128.0
+bandit>=1.8.0,<1.9.0
+safety>=3.5.0,<3.6.0
+detect-secrets>=1.5.0,<1.6.0
+apkleaks>=2.6.0,<2.7.0
+qark>=4.0.0,<4.1.0
+# Note: TruffleHog v3 should be installed via system package manager
+# Gitleaks, JADX, and Retire.js are installed via Docker
 
 # Git operations
 GitPython>=3.1.0,<3.2.0
@@ -61,4 +64,4 @@ typing-extensions>=4.12.0,<5.0.0
 black>=23.11.0,<23.12.0
 isort>=5.12.0,<5.13.0
 flake8>=6.1.0,<6.2.0
-mypy>=1.7.0,<1.8.0
+mypy>=1.7.0,<1.8.0psutil>=5.9.0,<6.0.0  # For system health monitoring

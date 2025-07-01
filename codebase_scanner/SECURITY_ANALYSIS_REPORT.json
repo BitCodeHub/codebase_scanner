@@ -1,11 +1,11 @@
 {
   "report_metadata": {
-    "generated_at": "2025-07-01T04:14:08.869341",
+    "generated_at": "2025-07-01T04:28:11.665965",
     "report_type": "Comprehensive Security Analysis",
     "target_repository": "https://github.com/BitCodeHub/codebase_scanner"
   },
   "security_tool_results": {
-    "test_timestamp": "2025-07-01T04:13:46.044456",
+    "test_timestamp": "2025-07-01T04:27:46.153363",
     "repository": "https://github.com/BitCodeHub/codebase_scanner",
     "branch": "main",
     "tools_tested": {
@@ -26,7 +26,7 @@
         "version": "8.27.2"
       },
       "trufflehog": {
-        "success": false,
+        "success": true,
         "version": ""
       },
       "detect_secrets": {
@@ -436,10 +436,10 @@
     },
     "summary": {
       "total_tools_tested": 10,
-      "tools_working": 9,
-      "tools_with_issues": 1,
+      "tools_working": 10,
+      "tools_with_issues": 0,
       "total_security_findings": 173,
-      "scan_completed": "2025-07-01T04:14:06.942493"
+      "scan_completed": "2025-07-01T04:28:09.255959"
     }
   },
   "api_endpoint_results": {
@@ -480,7 +480,7 @@
           },
           "trufflehog": {
             "available": true,
-            "version": "TruffleHog 2.2.1",
+            "version": "trufflehog 3.89.2",
             "error": null
           },
           "detect_secrets": {
@@ -528,7 +528,7 @@
   "production_readiness": {
     "security_tools": {
       "status": "\u2705 READY",
-      "details": "9/10 tools operational"
+      "details": "10/10 tools operational"
     },
     "api_endpoints": {
       "status": "\u2705 READY",

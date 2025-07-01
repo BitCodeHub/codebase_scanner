@@ -76,10 +76,11 @@ async def health_check():
 @app.get("/api/test")
 async def test_endpoint():
     """Test endpoint to verify API is working"""
+    from app.config import settings
     return {
         "message": "API is working!",
         "supabase_url": os.getenv("SUPABASE_URL", "Not configured"),
-        "environment": os.getenv("PYTHON_ENV", "development")
+        "environment": settings.environment
     }
 
 @app.get("/api/supabase/test")
@@ -928,6 +929,14 @@ try:
     print("Compliance routes loaded successfully")
 except ImportError as e:
     print(f"Compliance module not found: {e}")
+
+# Load health check routes
+try:
+    from app.api.health import router as health_router
+    app.include_router(health_router, tags=["Health"])
+    print("Health check routes loaded successfully")
+except ImportError as e:
+    print(f"Health check routes not loaded: {e}")
 
 async def generate_ai_security_insights(scan_results: dict, all_findings: list, repository_url: str, total_issues: int, total_secrets: int) -> dict:
     """Generate AI-powered security insights using Claude API"""

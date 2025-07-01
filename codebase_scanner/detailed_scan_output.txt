@@ -1,0 +1,49 @@
+🚀 Codebase Scanner - Comprehensive Security Analysis
+============================================================
+Target: https://github.com/BitCodeHub/codebase_scanner
+Branch: main
+Started: 2025-07-01 04:27:46
+============================================================
+🔧 Comprehensive Security Tool Testing
+==================================================
+📁 Working directory: /var/folders/s5/bygbsd4s6134vyn7y12hy3dh0000gn/T/tmplzcpnnnc
+
+📥 Cloning repository...
+✅ Repository cloned successfully
+
+🔍 Testing Semgrep...
+
+🔍 Testing Bandit...
+
+🔍 Testing Safety...
+
+🔍 Testing Gitleaks...
+
+🔍 Testing TruffleHog...
+
+🔍 Testing detect-secrets...
+
+🔍 Testing Retire.js...
+
+
+🌐 Testing API Endpoints
+==================================================
+
+📡 Testing health_check...
+✅ health_check working
+
+📡 Testing scanner_tools...
+✅ scanner_tools working
+
+📡 Testing test_endpoint...
+✅ test_endpoint working
+
+
+📊 Report saved to: /Users/jimmylam/Documents/security/codebase_scanner/SECURITY_ANALYSIS_REPORT.json
+
+📈 SUMMARY
+========================================
+Security Tools: 10/10 operational
+API Endpoints: 3/3 working
+Total Security Findings: 173
+Production Readiness: ✅ READY
