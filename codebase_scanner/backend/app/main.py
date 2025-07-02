@@ -11,6 +11,16 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Import startup warmup for production
+if os.getenv("PYTHON_ENV") == "production":
+    try:
+        from app.startup_warmup import warmup_tools
+        import asyncio
+        # Schedule warmup to run after app starts
+        asyncio.create_task(warmup_tools())
+    except Exception as e:
+        print(f"Warmup failed: {e}")
+
 # Create FastAPI app
 app = FastAPI(
     title="Codebase Scanner API",
@@ -959,6 +969,22 @@ try:
     print("Health check routes loaded successfully")
 except ImportError as e:
     print(f"Health check routes not loaded: {e}")
+
+# Load GitHub scan routes
+try:
+    from app.api.github_scan import router as github_router
+    app.include_router(github_router, prefix="/api", tags=["GitHub"])
+    print("GitHub scan routes loaded successfully")
+except ImportError as e:
+    print(f"GitHub scan routes not loaded: {e}")
+
+# Load optimized scanner tools routes
+try:
+    from app.api.scanner_tools import router as scanner_tools_router
+    app.include_router(scanner_tools_router, tags=["Scanner Tools"])
+    print("Optimized scanner tools routes loaded successfully")
+except ImportError as e:
+    print(f"Optimized scanner tools routes not loaded: {e}")
 
 async def generate_ai_security_insights(scan_results: dict, all_findings: list, repository_url: str, total_issues: int, total_secrets: int) -> dict:
     """Generate AI-powered security insights using Claude API"""

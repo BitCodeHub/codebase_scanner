@@ -1,0 +1,1185 @@
+{
+  "repository": "hyundai_kia_connect_api",
+  "scan_date": "2025-07-01T13:20:41.619468",
+  "findings": [
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImpl.py",
+      "line": 146,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 102,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 499,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 523,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 535,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 565,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 585,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 616,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 654,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 788,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 829,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 861,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 885,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 903,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 918,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 933,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 955,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 976,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/ApiImplType1.py",
+      "line": 990,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "line": 131,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "line": 575,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "line": 587,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "line": 604,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "line": 617,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "line": 642,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "line": 746,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "line": 755,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "line": 802,
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "line": 826,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "line": 858,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "line": 884,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "line": 906,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 190,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 645,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 658,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 670,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 686,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 700,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 740,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 753,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 765,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 777,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 790,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 815,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 919,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 928,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 986,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 1014,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 1048,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 1056,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 1084,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 1111,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 1130,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "line": 1171,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 223,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 749,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 767,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 782,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 801,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 816,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 844,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 951,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 962,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 1028,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 1042,
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 1065,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 1098,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 1109,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 1120,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 1138,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 1157,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 1172,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 1193,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 1223,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "line": 1248,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 166,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 232,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 383,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 399,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 419,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 428,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 447,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 488,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 501,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 513,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 528,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 544,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 572,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 679,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 690,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 756,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 770,
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 793,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 825,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 853,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 900,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "line": 919,
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "file": "hyundai_kia_connect_api/hyundai_kia_connect_api/KiaUvoApiUSA.py",
+      "line": 116,
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "tool": "Bandit",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "file": "hyundai_kia_connect_api/tests/eu_login_test.py",
+      "line": 15,
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "tool": "Pattern Analysis",
+      "severity": "medium",
+      "title": "Potential sensitive data logging detected",
+      "description": "Found 3 instances",
+      "occurrences": [
+        {
+          "file": "hyundai_kia_connect_api/bluelink.py",
+          "line": 25,
+          "match": "print(\"  key:\", vehicle.key"
+        },
+        {
+          "file": "hyundai_kia_connect_api/bluelink.py",
+          "line": 42,
+          "match": "print(\"  smart_key_battery_warning_is_on:\", vehicle.smart_key"
+        },
+        {
+          "file": "hyundai_kia_connect_api/bluelink.py",
+          "line": 196,
+          "match": "print(textwrap.indent(json.dumps(vehicle.data, indent=2, sort_key"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_findings": 100,
+    "critical": 0,
+    "high": 0,
+    "medium": 95,
+    "low": 5,
+    "info": 0
+  },
+  "code_analysis": {},
+  "security_issues": [
+    {
+      "file": "hyundai_kia_connect_api/HyundaiBlueLinkApiUSA.py",
+      "issue": "No rate limiting detected",
+      "severity": "medium",
+      "recommendation": "Implement rate limiting to prevent API abuse"
+    },
+    {
+      "file": "hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "issue": "No rate limiting detected",
+      "severity": "medium",
+      "recommendation": "Implement rate limiting to prevent API abuse"
+    },
+    {
+      "file": "hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "issue": "No rate limiting detected",
+      "severity": "medium",
+      "recommendation": "Implement rate limiting to prevent API abuse"
+    },
+    {
+      "file": "hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "issue": "No rate limiting detected",
+      "severity": "medium",
+      "recommendation": "Implement rate limiting to prevent API abuse"
+    },
+    {
+      "file": "hyundai_kia_connect_api/KiaUvoApiUSA.py",
+      "issue": "No rate limiting detected",
+      "severity": "medium",
+      "recommendation": "Implement rate limiting to prevent API abuse"
+    },
+    {
+      "file": "hyundai_kia_connect_api/ApiImpl.py",
+      "issue": "No rate limiting detected",
+      "severity": "medium",
+      "recommendation": "Implement rate limiting to prevent API abuse"
+    },
+    {
+      "file": "hyundai_kia_connect_api/bluelink.py",
+      "issue": "No rate limiting detected",
+      "severity": "medium",
+      "recommendation": "Implement rate limiting to prevent API abuse"
+    },
+    {
+      "file": "hyundai_kia_connect_api/Token.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "hyundai_kia_connect_api/HyundaiBlueLinkApiUSA.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "hyundai_kia_connect_api/KiaUvoApiAU.py",
+      "issue": "No session timeout detected",
+      "severity": "medium"
+    },
+    {
+      "file": "hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "hyundai_kia_connect_api/KiaUvoApiEU.py",
+      "issue": "No session timeout detected",
+      "severity": "medium"
+    },
+    {
+      "file": "hyundai_kia_connect_api/__init__.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "hyundai_kia_connect_api/KiaUvoApiIN.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "hyundai_kia_connect_api/KiaUvoApiUSA.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "hyundai_kia_connect_api/KiaUvoApiUSA.py",
+      "issue": "No session timeout detected",
+      "severity": "medium"
+    },
+    {
+      "file": "hyundai_kia_connect_api/KiaUvoApiCN.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "hyundai_kia_connect_api/bluelink.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "hyundai_kia_connect_api/ApiImplType1.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "hyundai_kia_connect_api/ApiImpl.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "hyundai_kia_connect_api/ApiImpl.py",
+      "issue": "No session timeout detected",
+      "severity": "medium"
+    },
+    {
+      "file": "hyundai_kia_connect_api/KiaUvoApiCA.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "hyundai_kia_connect_api/const.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "hyundai_kia_connect_api/VehicleManager.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "tests/ca_login_test.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "tests/eu_login_test.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    },
+    {
+      "file": "tests/au_login_test.py",
+      "issue": "JWT token verification might be missing",
+      "severity": "high"
+    }
+  ],
+  "recommendations": [
+    "Implement comprehensive logging for security events",
+    "Add rate limiting to prevent API abuse",
+    "Use secure token storage mechanisms",
+    "Implement proper session management with timeouts",
+    "Add input validation for all user inputs",
+    "Review and update dependencies regularly"
+  ]
+}

@@ -1,0 +1,65 @@
+================================================================================
+HYUNDAI KIA CONNECT API - SECURITY ANALYSIS REPORT
+================================================================================
+
+Scan Date: 2025-07-01T13:20:41.619468
+Repository: hyundai_kia_connect_api
+
+SUMMARY
+----------------------------------------
+Total Findings: 100
+Critical: 0
+High: 0
+Medium: 95
+Low: 5
+Info: 0
+
+TOP SECURITY ISSUES
+----------------------------------------
+
+[MEDIUM] No rate limiting detected
+File: hyundai_kia_connect_api/HyundaiBlueLinkApiUSA.py
+Recommendation: Implement rate limiting to prevent API abuse
+
+[MEDIUM] No rate limiting detected
+File: hyundai_kia_connect_api/KiaUvoApiAU.py
+Recommendation: Implement rate limiting to prevent API abuse
+
+[MEDIUM] No rate limiting detected
+File: hyundai_kia_connect_api/KiaUvoApiEU.py
+Recommendation: Implement rate limiting to prevent API abuse
+
+[MEDIUM] No rate limiting detected
+File: hyundai_kia_connect_api/KiaUvoApiIN.py
+Recommendation: Implement rate limiting to prevent API abuse
+
+[MEDIUM] No rate limiting detected
+File: hyundai_kia_connect_api/KiaUvoApiUSA.py
+Recommendation: Implement rate limiting to prevent API abuse
+
+[MEDIUM] No rate limiting detected
+File: hyundai_kia_connect_api/ApiImpl.py
+Recommendation: Implement rate limiting to prevent API abuse
+
+[MEDIUM] No rate limiting detected
+File: hyundai_kia_connect_api/bluelink.py
+Recommendation: Implement rate limiting to prevent API abuse
+
+[HIGH] JWT token verification might be missing
+File: hyundai_kia_connect_api/Token.py
+
+[HIGH] JWT token verification might be missing
+File: hyundai_kia_connect_api/HyundaiBlueLinkApiUSA.py
+
+[HIGH] JWT token verification might be missing
+File: hyundai_kia_connect_api/KiaUvoApiAU.py
+
+
+RECOMMENDATIONS
+----------------------------------------
+1. Implement comprehensive logging for security events
+2. Add rate limiting to prevent API abuse
+3. Use secure token storage mechanisms
+4. Implement proper session management with timeouts
+5. Add input validation for all user inputs
+6. Review and update dependencies regularly
