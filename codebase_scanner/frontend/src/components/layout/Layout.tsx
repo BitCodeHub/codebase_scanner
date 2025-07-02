@@ -12,7 +12,8 @@ import {
   Bell,
   Menu,
   X,
-  Bug
+  Bug,
+  Upload
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -26,6 +27,7 @@ export default function Layout({ children }: LayoutProps) {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, description: 'Overview and metrics' },
     { name: 'Projects', href: '/projects', icon: FolderIcon, description: 'Manage your projects' },
+    { name: 'Scan File', href: '/scan-file', icon: Upload, description: 'Upload & scan any code file' },
     { name: 'Security', href: '/security', icon: ShieldCheckIcon, description: 'Vulnerability reports' },
     { name: 'Activity', href: '/activity', icon: Activity, description: 'Recent scans and logs' },
     { name: 'Debug', href: '/debug', icon: Bug, description: 'Debug tools' },

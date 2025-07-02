@@ -986,6 +986,14 @@ try:
 except ImportError as e:
     print(f"Optimized scanner tools routes not loaded: {e}")
 
+# Load universal scanner routes
+try:
+    from app.api.universal_scanner import router as universal_router
+    app.include_router(universal_router, prefix="/api", tags=["Universal Scanner"])
+    print("Universal scanner routes loaded successfully")
+except ImportError as e:
+    print(f"Universal scanner routes not loaded: {e}")
+
 async def generate_ai_security_insights(scan_results: dict, all_findings: list, repository_url: str, total_issues: int, total_secrets: int) -> dict:
     """Generate AI-powered security insights using Claude API"""
     try:
