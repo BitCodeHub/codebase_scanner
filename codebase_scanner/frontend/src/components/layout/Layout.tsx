@@ -27,8 +27,8 @@ export default function Layout({ children }: LayoutProps) {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, description: 'Overview and metrics' },
     { name: 'Projects', href: '/projects', icon: FolderIcon, description: 'Manage your projects' },
-    { name: 'Scan File', href: '/scan-file', icon: Upload, description: 'Upload & scan any code file' },
-    { name: 'Security', href: '/security', icon: ShieldCheckIcon, description: 'Vulnerability reports' },
+    { name: 'Quick Scan', href: '/scan-file', icon: Upload, description: 'Simple file scanner' },
+    { name: 'Deep Scan', href: '/security', icon: ShieldCheckIcon, description: 'Comprehensive analysis' },
     { name: 'Activity', href: '/activity', icon: Activity, description: 'Recent scans and logs' },
     { name: 'Debug', href: '/debug', icon: Bug, description: 'Debug tools' },
   ]

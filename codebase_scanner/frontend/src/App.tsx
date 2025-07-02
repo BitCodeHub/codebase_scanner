@@ -14,6 +14,7 @@ import Activity from './pages/Activity'
 import DebugPage from './pages/DebugPage'
 import LoadingSpinner from './components/ui/LoadingSpinner'
 import UniversalScanPage from './pages/UniversalScanPage'
+import { ComprehensiveScan } from './components/ComprehensiveScan'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -55,7 +56,7 @@ function App() {
           <Route path="/activity" element={<Activity />} />
           <Route path="/debug" element={<DebugPage />} />
           <Route path="/scan-file" element={<UniversalScanPage />} />
-          <Route path="/security" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/security" element={<ComprehensiveScan />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Layout>

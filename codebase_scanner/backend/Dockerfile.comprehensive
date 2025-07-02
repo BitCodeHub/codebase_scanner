@@ -1,0 +1,158 @@
+# Comprehensive Security Scanner Dockerfile
+FROM python:3.11-slim AS base
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    LOG_DIR=/app/logs \
+    TEMP_DIR=/app/temp
+
+# Install system dependencies and build tools
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    wget \
+    build-essential \
+    libmagic1 \
+    nodejs \
+    npm \
+    golang-go \
+    ruby-full \
+    php-cli \
+    default-jdk \
+    maven \
+    gradle \
+    dotnet-sdk-8.0 \
+    cargo \
+    rustc \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python-based security tools
+RUN pip install --no-cache-dir \
+    semgrep==1.45.0 \
+    bandit==1.7.5 \
+    safety==3.0.0 \
+    detect-secrets==1.4.0 \
+    truffleHog==2.2.1 \
+    pylint \
+    flake8 \
+    mypy \
+    pyre-check \
+    dlint \
+    pytaint
+
+# Install Node.js security tools
+RUN npm install -g \
+    @bearer/cli \
+    eslint \
+    eslint-plugin-security \
+    retire \
+    snyk \
+    nodejsscan \
+    jshint \
+    standard \
+    dependency-check \
+    audit-ci \
+    better-npm-audit
+
+# Install Ruby security tools
+RUN gem install \
+    brakeman \
+    bundler-audit \
+    ruby_audit \
+    dawnscanner
+
+# Install Go security tools
+RUN go install github.com/securego/gosec/v2/cmd/gosec@latest && \
+    go install github.com/praetorian-inc/gokart@latest && \
+    go install github.com/sonatype-nexus-community/nancy@latest
+
+# Install PHP security tools
+RUN wget https://github.com/squizlabs/PHP_CodeSniffer/releases/download/3.7.2/phpcs.phar -O /usr/local/bin/phpcs && \
+    wget https://github.com/squizlabs/PHP_CodeSniffer/releases/download/3.7.2/phpcbf.phar -O /usr/local/bin/phpcbf && \
+    chmod +x /usr/local/bin/phpcs /usr/local/bin/phpcbf
+
+# Install .NET security tools
+RUN dotnet tool install --global security-scan
+
+# Install GitLeaks for secret scanning
+RUN curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.0/gitleaks_8.18.0_linux_x64.tar.gz | tar -xz -C /usr/local/bin && \
+    chmod +x /usr/local/bin/gitleaks
+
+# Install TruffleHog v3 (latest)
+RUN curl -sSfL https://github.com/trufflesecurity/trufflehog/releases/download/v3.63.0/trufflehog_3.63.0_linux_amd64.tar.gz | tar -xz -C /usr/local/bin && \
+    chmod +x /usr/local/bin/trufflehog
+
+# Install Grype for vulnerability scanning
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+# Install Trivy for comprehensive vulnerability scanning
+RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+# Install OWASP Dependency Check
+RUN wget https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.0/dependency-check-9.0.0-release.zip -O /tmp/dependency-check.zip && \
+    unzip /tmp/dependency-check.zip -d /opt/ && \
+    chmod +x /opt/dependency-check/bin/dependency-check.sh && \
+    ln -s /opt/dependency-check/bin/dependency-check.sh /usr/local/bin/dependency-check
+
+# Install Checkov for Infrastructure as Code scanning
+RUN pip install checkov
+
+# Install additional specialized tools
+RUN pip install \
+    njsscan \
+    pysast \
+    libsast \
+    mobsfscan
+
+# Install CodeQL CLI
+RUN wget https://github.com/github/codeql-action/releases/download/codeql-bundle-20231120/codeql-bundle-linux64.tar.gz -O /tmp/codeql.tar.gz && \
+    tar -xzf /tmp/codeql.tar.gz -C /opt && \
+    ln -s /opt/codeql/codeql /usr/local/bin/codeql
+
+# Install Horusec for multi-language scanning
+RUN curl -fsSL https://raw.githubusercontent.com/ZupIT/horusec/main/deployments/scripts/install.sh | bash -s latest
+
+# Install Bearer CLI for security scanning
+RUN curl -sfL https://raw.githubusercontent.com/Bearer/bearer/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+# Add Go binaries to PATH
+ENV PATH="/root/go/bin:${PATH}"
+
+# Create app user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set work directory
+WORKDIR /app
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p /app/logs /app/temp /app/uploads && \
+    chown -R appuser:appuser /app
+
+# Copy and set permissions for scripts
+COPY --chmod=755 scripts/start.sh /app/scripts/
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Start command
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${WORKERS:-4} --log-level ${LOG_LEVEL:-info}"]

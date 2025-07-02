@@ -1002,6 +1002,14 @@ try:
 except ImportError as e:
     print(f"Simple scanner routes not loaded: {e}")
 
+# Load comprehensive scanner
+try:
+    from app.api.comprehensive_scan import router as comprehensive_router
+    app.include_router(comprehensive_router, prefix="/api", tags=["Comprehensive Scanner"])
+    print("Comprehensive scanner routes loaded successfully")
+except ImportError as e:
+    print(f"Comprehensive scanner routes not loaded: {e}")
+
 async def generate_ai_security_insights(scan_results: dict, all_findings: list, repository_url: str, total_issues: int, total_secrets: int) -> dict:
     """Generate AI-powered security insights using Claude API"""
     try:
