@@ -109,14 +109,21 @@ class UniversalScanner:
             cmd = ["semgrep", "--config=auto", "--json", directory]
             result = await self._run_command(cmd, timeout=300)
             
-            if result['success'] and result['stdout']:
-                findings = json.loads(result['stdout'])
-                return {
-                    'success': True,
-                    'findings': self._parse_semgrep_findings(findings)
-                }
+            # Semgrep returns non-zero exit code when it finds issues
+            if result['stdout']:
+                try:
+                    findings = json.loads(result['stdout'])
+                    parsed_findings = self._parse_semgrep_findings(findings)
+                    if parsed_findings:
+                        print(f"   ✅ Semgrep found {len(parsed_findings)} issues")
+                    return {
+                        'success': True,
+                        'findings': parsed_findings
+                    }
+                except json.JSONDecodeError as e:
+                    print(f"   ⚠️  Semgrep JSON parse error: {e}")
         except Exception as e:
-            print(f"Semgrep scan error: {e}")
+            print(f"   ❌ Semgrep scan error: {e}")
         
         return {'success': False, 'findings': []}
     
@@ -126,19 +133,22 @@ class UniversalScanner:
         
         # Run multiple secret scanners
         scanners = [
-            ("gitleaks", ["gitleaks", "detect", "--source", directory, "--report-format", "json"]),
-            ("trufflehog", ["trufflehog", "filesystem", directory, "--json"]),
+            ("gitleaks", ["gitleaks", "detect", "--source", directory, "--no-git", "--report-format", "json", "--exit-code", "0"]),
+            ("trufflehog", ["trufflehog", "filesystem", directory, "--json", "--no-verification"]),
             ("detect-secrets", ["detect-secrets", "scan", directory])
         ]
         
         for scanner_name, cmd in scanners:
             try:
                 result = await self._run_command(cmd, timeout=120)
-                if result['success'] and result['stdout']:
+                # For secret scanners, non-zero exit code often means secrets were found
+                if result['stdout']:
                     secrets = self._parse_secret_findings(scanner_name, result['stdout'])
                     all_secrets.extend(secrets)
+                    if secrets:
+                        print(f"   ✅ {scanner_name} found {len(secrets)} secrets")
             except Exception as e:
-                print(f"{scanner_name} error: {e}")
+                print(f"   ❌ {scanner_name} error: {e}")
         
         return {
             'success': True,
@@ -222,6 +232,7 @@ Format your response in clear sections with markdown."""
     async def _run_command(self, cmd: List[str], timeout: int = 60) -> Dict[str, Any]:
         """Run a command asynchronously"""
         try:
+            print(f"🔧 Running command: {' '.join(cmd[:3])}...")
             process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
@@ -233,14 +244,24 @@ Format your response in clear sections with markdown."""
                 timeout=timeout
             )
             
-            return {
+            result = {
                 'success': process.returncode == 0,
                 'stdout': stdout.decode('utf-8', errors='ignore'),
-                'stderr': stderr.decode('utf-8', errors='ignore')
+                'stderr': stderr.decode('utf-8', errors='ignore'),
+                'returncode': process.returncode
             }
+            
+            if not result['success']:
+                print(f"   ⚠️  Command failed with code {process.returncode}")
+                if result['stderr']:
+                    print(f"   Error: {result['stderr'][:200]}")
+            
+            return result
         except asyncio.TimeoutError:
+            print(f"   ❌ Command timed out after {timeout}s")
             return {'success': False, 'error': 'Command timed out'}
         except Exception as e:
+            print(f"   ❌ Command error: {e}")
             return {'success': False, 'error': str(e)}
     
     async def _run_bandit(self, directory: str) -> Dict[str, Any]:
@@ -248,7 +269,8 @@ Format your response in clear sections with markdown."""
         cmd = ["bandit", "-r", directory, "-f", "json"]
         result = await self._run_command(cmd)
         
-        if result['success'] and result['stdout']:
+        # Bandit returns non-zero exit code when it finds issues
+        if result['stdout']:
             try:
                 data = json.loads(result['stdout'])
                 findings = []
@@ -264,9 +286,11 @@ Format your response in clear sections with markdown."""
                         'code': issue.get('code', ''),
                         'cwe': issue.get('issue_cwe', {}).get('id', '')
                     })
+                if findings:
+                    print(f"   ✅ Bandit found {len(findings)} issues")
                 return {'success': True, 'findings': findings}
             except Exception as e:
-                print(f"Bandit parsing error: {e}")
+                print(f"   ⚠️  Bandit parsing error: {e}")
         
         return {'success': False, 'findings': []}
     
