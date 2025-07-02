@@ -624,6 +624,78 @@ async def get_scan_status(scan_id: str):
     else:
         raise HTTPException(status_code=404, detail="Scan not found")
 
+@router.post("/test-scanner-debug")
+async def test_scanner_debug():
+    """Debug endpoint to test scanners"""
+    import tempfile
+    
+    test_code = '''
+API_KEY = "sk-1234567890abcdef"
+password = "admin123"
+    
+def sql_injection(user_id):
+    query = f"SELECT * FROM users WHERE id = {user_id}"
+    return query
+'''
+    
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        f.write(test_code)
+        test_file = f.name
+    
+    results = {
+        "test_file": test_file,
+        "scanners": {}
+    }
+    
+    # Test Bandit
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["bandit", "-r", test_file, "-f", "json"],
+            capture_output=True,
+            text=True
+        )
+        if result.stdout:
+            data = json.loads(result.stdout)
+            results["scanners"]["bandit"] = {
+                "success": True,
+                "issues_found": len(data.get('results', [])),
+                "sample": str(data.get('results', [])[:1])
+            }
+        else:
+            results["scanners"]["bandit"] = {
+                "success": False,
+                "error": result.stderr[:200]
+            }
+    except Exception as e:
+        results["scanners"]["bandit"] = {"error": str(e)}
+    
+    # Test Semgrep
+    try:
+        result = subprocess.run(
+            ["semgrep", "--config=auto", "--json", test_file],
+            capture_output=True,
+            text=True
+        )
+        if result.stdout:
+            data = json.loads(result.stdout)
+            results["scanners"]["semgrep"] = {
+                "success": True,
+                "issues_found": len(data.get('results', []))
+            }
+        else:
+            results["scanners"]["semgrep"] = {
+                "success": False,
+                "error": result.stderr[:200]
+            }
+    except Exception as e:
+        results["scanners"]["semgrep"] = {"error": str(e)}
+    
+    # Cleanup
+    os.unlink(test_file)
+    
+    return results
+
 @router.get("/upload-universal/{scan_id}/results")
 async def get_scan_results(scan_id: str):
     """Get the full results of a universal scan"""

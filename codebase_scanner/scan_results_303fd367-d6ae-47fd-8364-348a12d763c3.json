@@ -1,0 +1,26 @@
+{
+  "scan_id": "303fd367-d6ae-47fd-8364-348a12d763c3",
+  "filename": "vulnerable_webapp.py",
+  "status": "completed",
+  "started_at": "2025-07-02T04:52:51.877013",
+  "languages": {
+    "python": 1
+  },
+  "findings": [],
+  "secrets": {
+    "success": true,
+    "secrets_found": 0,
+    "findings": []
+  },
+  "ai_analysis": null,
+  "files_scanned": 1,
+  "total_findings": 0,
+  "severity_counts": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "info": 0
+  },
+  "completed_at": "2025-07-02T04:53:01.469027"
+}
