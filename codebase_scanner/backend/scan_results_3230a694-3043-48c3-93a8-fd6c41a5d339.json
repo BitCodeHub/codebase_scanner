@@ -1,0 +1,24 @@
+{
+  "scan_id": "3230a694-3043-48c3-93a8-fd6c41a5d339",
+  "filename": "vulnerable_app.py",
+  "status": "completed",
+  "started_at": "2025-07-02T04:40:41.243624",
+  "languages": {},
+  "findings": [],
+  "secrets": {
+    "success": true,
+    "secrets_found": 0,
+    "findings": []
+  },
+  "ai_analysis": null,
+  "files_scanned": 0,
+  "total_findings": 0,
+  "severity_counts": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "info": 0
+  },
+  "completed_at": "2025-07-02T04:40:48.607532"
+}

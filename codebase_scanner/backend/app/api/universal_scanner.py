@@ -437,40 +437,42 @@ async def scan_uploaded_file(
     # Generate scan ID
     scan_id = str(uuid.uuid4())
     
-    # Save uploaded file
-    with tempfile.TemporaryDirectory() as temp_dir:
-        file_path = os.path.join(temp_dir, file.filename)
-        
-        async with aiofiles.open(file_path, 'wb') as f:
-            await f.write(contents)
-        
-        # Extract if archive
-        extract_dir = os.path.join(temp_dir, "extracted")
-        os.makedirs(extract_dir, exist_ok=True)
-        
-        if file.filename.endswith(('.zip', '.tar', '.tar.gz', '.tgz')):
-            try:
-                if file.filename.endswith('.zip'):
-                    with zipfile.ZipFile(file_path, 'r') as zip_ref:
-                        zip_ref.extractall(extract_dir)
-                else:
-                    with tarfile.open(file_path, 'r:*') as tar_ref:
-                        tar_ref.extractall(extract_dir)
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"Failed to extract archive: {str(e)}")
-        else:
-            # Copy single file
-            import shutil
-            shutil.copy2(file_path, os.path.join(extract_dir, file.filename))
-        
-        # Start background scan
-        background_tasks.add_task(
-            run_universal_scan,
-            scan_id=scan_id,
-            directory=extract_dir,
-            filename=file.filename,
-            enable_ai_analysis=enable_ai_analysis
-        )
+    # Save uploaded file to a persistent location
+    scan_dir = f"/tmp/scan_{scan_id}"
+    os.makedirs(scan_dir, exist_ok=True)
+    
+    file_path = os.path.join(scan_dir, file.filename)
+    
+    async with aiofiles.open(file_path, 'wb') as f:
+        await f.write(contents)
+    
+    # Extract if archive
+    extract_dir = os.path.join(scan_dir, "extracted")
+    os.makedirs(extract_dir, exist_ok=True)
+    
+    if file.filename.endswith(('.zip', '.tar', '.tar.gz', '.tgz')):
+        try:
+            if file.filename.endswith('.zip'):
+                with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                    zip_ref.extractall(extract_dir)
+            else:
+                with tarfile.open(file_path, 'r:*') as tar_ref:
+                    tar_ref.extractall(extract_dir)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to extract archive: {str(e)}")
+    else:
+        # Copy single file
+        import shutil
+        shutil.copy2(file_path, os.path.join(extract_dir, file.filename))
+    
+    # Start background scan
+    background_tasks.add_task(
+        run_universal_scan,
+        scan_id=scan_id,
+        directory=extract_dir,
+        filename=file.filename,
+        enable_ai_analysis=enable_ai_analysis
+    )
     
     return {
         "scan_id": scan_id,
@@ -558,6 +560,16 @@ async def run_universal_scan(
     
     # Save results
     save_scan_results(scan_id, results)
+    
+    # Cleanup scan directory
+    try:
+        scan_dir = f"/tmp/scan_{scan_id}"
+        if os.path.exists(scan_dir):
+            import shutil
+            shutil.rmtree(scan_dir)
+            print(f"🧹 Cleaned up scan directory: {scan_dir}")
+    except Exception as e:
+        print(f"⚠️  Failed to cleanup scan directory: {e}")
 
 def save_scan_results(scan_id: str, results: Dict[str, Any]):
     """Save scan results to file"""
