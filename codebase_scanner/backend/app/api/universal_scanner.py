@@ -514,7 +514,11 @@ async def run_universal_scan(
     enable_ai_analysis: bool
 ):
     """Run the universal security scan"""
+    from app.services.universal_scanner_service import EnhancedUniversalScanner
+    
     scanner = UniversalScanner()
+    enhanced_scanner = EnhancedUniversalScanner()
+    
     results = {
         "scan_id": scan_id,
         "filename": filename,
@@ -528,34 +532,42 @@ async def run_universal_scan(
     
     try:
         print(f"\n🔍 Starting universal scan for: {filename}")
+        print(f"📂 Scan directory: {directory}")
+        
+        # List files in directory
+        files_to_scan = []
+        for root, _, files in os.walk(directory):
+            for file in files:
+                file_path = os.path.join(root, file)
+                files_to_scan.append(file_path)
+                print(f"   📄 Found file: {file_path}")
+        
+        results['files_scanned'] = len(files_to_scan)
         
         # Detect languages
         print("📝 Detecting programming languages...")
         results['languages'] = await scanner.detect_languages(directory)
         print(f"   Languages found: {', '.join(results['languages'].keys())}")
         
-        # Count files
-        file_count = sum(1 for _, _, files in os.walk(directory) for f in files)
-        results['files_scanned'] = file_count
+        # Use enhanced scanner for each file
+        all_findings = []
+        secrets_count = 0
         
-        # Run Semgrep (multi-language)
-        print("🔧 Running Semgrep multi-language scan...")
-        semgrep_results = await scanner.scan_with_semgrep(directory)
-        if semgrep_results['success']:
-            results['findings'].extend(semgrep_results['findings'])
+        for file_path in files_to_scan:
+            print(f"\n🔍 Scanning file: {file_path}")
+            file_results = await enhanced_scanner.scan_file_comprehensive(file_path)
+            
+            if file_results['findings']:
+                all_findings.extend(file_results['findings'])
+                secrets_count += file_results.get('secrets_found', 0)
+                print(f"   ✅ Found {len(file_results['findings'])} issues")
         
-        # Scan for secrets
-        print("🔐 Scanning for hardcoded secrets...")
-        secret_results = await scanner.scan_for_secrets(directory)
-        results['secrets'] = secret_results
-        if secret_results['findings']:
-            results['findings'].extend(secret_results['findings'])
-        
-        # Run language-specific scanners
-        for language in results['languages'].keys():
-            print(f"🔧 Running {language}-specific security scanners...")
-            lang_findings = await scanner.scan_language_specific(directory, language)
-            results['findings'].extend(lang_findings)
+        results['findings'] = all_findings
+        results['secrets'] = {
+            'success': True,
+            'secrets_found': secrets_count,
+            'findings': [f for f in all_findings if f.get('type') == 'secret']
+        }
         
         # Calculate summary
         results['total_findings'] = len(results['findings'])
