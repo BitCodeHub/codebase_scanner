@@ -1,0 +1,217 @@
+{
+  "scan_id": "ee2beb82-e5a4-4167-8f35-640fdefc32ab",
+  "filename": "vulnerable_webapp.py",
+  "status": "completed",
+  "started_at": "2025-07-02T05:00:57.517395",
+  "languages": {
+    "python": 1
+  },
+  "findings": [
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Consider possible security implications associated with pickle module.",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 6,
+      "code": "5 import os\n6 import pickle\n7 import requests\n",
+      "cwe": 502
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Consider possible security implications associated with the subprocess module.",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 9,
+      "code": "8 import mysql.connector\n9 import subprocess\n10 import hashlib\n",
+      "cwe": 78
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "LOW",
+      "confidence": "MEDIUM",
+      "title": "Possible hardcoded password: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 17,
+      "code": "16 AWS_ACCESS_KEY_ID = \"AKIAIOSFODNN7EXAMPLE\"\n17 AWS_SECRET_ACCESS_KEY = \"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\"\n18 DATABASE_PASSWORD = \"admin123\"\n",
+      "cwe": 259
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "LOW",
+      "confidence": "MEDIUM",
+      "title": "Possible hardcoded password: 'admin123'",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 18,
+      "code": "17 AWS_SECRET_ACCESS_KEY = \"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\"\n18 DATABASE_PASSWORD = \"admin123\"\n19 JWT_SECRET = \"super-secret-jwt-key\"\n",
+      "cwe": 259
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "LOW",
+      "confidence": "MEDIUM",
+      "title": "Possible hardcoded password: 'super-secret-jwt-key'",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 19,
+      "code": "18 DATABASE_PASSWORD = \"admin123\"\n19 JWT_SECRET = \"super-secret-jwt-key\"\n20 GITHUB_TOKEN = \"ghp_1234567890abcdefghijklmnopqrstuvwxyz\"\n",
+      "cwe": 259
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "LOW",
+      "confidence": "MEDIUM",
+      "title": "Possible hardcoded password: 'ghp_1234567890abcdefghijklmnopqrstuvwxyz'",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 20,
+      "code": "19 JWT_SECRET = \"super-secret-jwt-key\"\n20 GITHUB_TOKEN = \"ghp_1234567890abcdefghijklmnopqrstuvwxyz\"\n21 \n",
+      "cwe": 259
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Possible SQL injection vector through string-based query construction.",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 35,
+      "code": "34     # Vulnerable to SQL injection\n35     query = f\"SELECT * FROM users WHERE id = {user_id}\"\n36     cursor.execute(query)\n",
+      "cwe": 89
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "title": "subprocess call with shell=True identified, security issue.",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 45,
+      "code": "44     cmd = f\"ping -c 1 {host}\"\n45     output = subprocess.check_output(cmd, shell=True)\n46     return output\n",
+      "cwe": 78
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "title": "Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 54,
+      "code": "53         # Vulnerable to deserialization attacks\n54         data = pickle.load(f)\n55     return str(data)\n",
+      "cwe": 502
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "title": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 60,
+      "code": "59     # MD5 is cryptographically broken\n60     return hashlib.md5(password.encode()).hexdigest()\n61 \n",
+      "cwe": 327
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 65,
+      "code": "64     # Not cryptographically secure\n65     return ''.join([str(random.randint(0, 9)) for _ in range(32)])\n66 \n",
+      "cwe": 330
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "LOW",
+      "confidence": "MEDIUM",
+      "title": "Possible hardcoded password: 'password123'",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 77,
+      "code": "76 ADMIN_USERNAME = \"admin\"\n77 ADMIN_PASSWORD = \"password123\"\n78 \n",
+      "cwe": 259
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "title": "Use of possibly insecure function - consider using safer ast.literal_eval.",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 84,
+      "code": "83     # Dangerous eval usage\n84     result = eval(expression)\n85     return str(result)\n",
+      "cwe": 78
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "title": "Call to requests with verify=False disabling SSL certificate checks, security issue.",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 90,
+      "code": "89     # SSL verification disabled\n90     return requests.get(url, verify=False)\n91 \n",
+      "cwe": 295
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "MEDIUM",
+      "confidence": "LOW",
+      "title": "Call to requests without timeout",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 90,
+      "code": "89     # SSL verification disabled\n90     return requests.get(url, verify=False)\n91 \n",
+      "cwe": 400
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "HIGH",
+      "confidence": "MEDIUM",
+      "title": "A Flask app appears to be run with debug=True, which exposes the Werkzeug debugger and allows the execution of arbitrary code.",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 94,
+      "code": "93 if __name__ == \"__main__\":\n94     app.run(debug=True, host='0.0.0.0')\n",
+      "cwe": 94
+    },
+    {
+      "tool": "bandit",
+      "language": "python",
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "title": "Possible binding to all interfaces.",
+      "file": "/tmp/scan_ee2beb82-e5a4-4167-8f35-640fdefc32ab/extracted/vulnerable_webapp.py",
+      "line": 94,
+      "code": "93 if __name__ == \"__main__\":\n94     app.run(debug=True, host='0.0.0.0')\n",
+      "cwe": 605
+    }
+  ],
+  "secrets": {
+    "success": true,
+    "secrets_found": 0,
+    "findings": []
+  },
+  "ai_analysis": {
+    "success": false,
+    "error": "Claude analysis failed: 'Usage' object has no attribute 'total_tokens'"
+  },
+  "files_scanned": 1,
+  "total_findings": 17,
+  "severity_counts": {
+    "critical": 0,
+    "high": 4,
+    "medium": 5,
+    "low": 8,
+    "info": 0
+  },
+  "completed_at": "2025-07-02T05:01:21.653945"
+}

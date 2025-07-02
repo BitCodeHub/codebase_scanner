@@ -217,10 +217,21 @@ Format your response in clear sections with markdown."""
                 }]
             )
             
+            # Extract analysis text
+            analysis_text = message.content[0].text if message.content else "No analysis available"
+            
+            # Get token usage safely
+            tokens_used = None
+            if hasattr(message, 'usage'):
+                if hasattr(message.usage, 'total_tokens'):
+                    tokens_used = message.usage.total_tokens
+                elif hasattr(message.usage, 'input_tokens') and hasattr(message.usage, 'output_tokens'):
+                    tokens_used = message.usage.input_tokens + message.usage.output_tokens
+            
             return {
                 'success': True,
-                'analysis': message.content[0].text,
-                'tokens_used': message.usage.total_tokens
+                'analysis': analysis_text,
+                'tokens_used': tokens_used
             }
             
         except Exception as e:
