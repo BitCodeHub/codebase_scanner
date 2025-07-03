@@ -1,0 +1,233 @@
+{
+  "actions": [
+    {
+      "action": "update",
+      "resolves": [
+        {
+          "id": 1104501,
+          "path": ".>@vercel/blob>undici",
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "module": "undici",
+      "target": "5.29.0",
+      "depth": 3
+    },
+    {
+      "action": "update",
+      "resolves": [
+        {
+          "id": 1105444,
+          "path": ".>eslint-config-next>@next/eslint-plugin-next>glob>minimatch>brace-expansion",
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "module": "brace-expansion",
+      "target": "2.0.2",
+      "depth": 6
+    },
+    {
+      "action": "review",
+      "module": "esbuild",
+      "resolves": [
+        {
+          "id": 1102341,
+          "path": ".>drizzle-kit>@esbuild-kit/esm-loader>@esbuild-kit/core-utils>esbuild",
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        },
+        {
+          "id": 1102341,
+          "path": ".>drizzle-kit>esbuild",
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ]
+    },
+    {
+      "action": "review",
+      "module": "brace-expansion",
+      "resolves": [
+        {
+          "id": 1105443,
+          "path": ".>eslint>minimatch>brace-expansion",
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ]
+    }
+  ],
+  "advisories": {
+    "1102341": {
+      "findings": [
+        {
+          "version": "0.18.20",
+          "paths": []
+        },
+        {
+          "version": "0.19.12",
+          "paths": []
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/evanw/esbuild/security/advisories/GHSA-67mh-4wv8-2f99\n- https://github.com/evanw/esbuild/commit/de85afd65edec9ebc44a11e245fd9e9a2e99760d\n- https://github.com/advisories/GHSA-67mh-4wv8-2f99",
+      "created": "2025-02-10T17:48:07.000Z",
+      "id": 1102341,
+      "npm_advisory_id": null,
+      "overview": "### Summary\n\nesbuild allows any websites to send any request to the development server and read the response due to default CORS settings.\n\n### Details\n\nesbuild sets `Access-Control-Allow-Origin: *` header to all requests, including the SSE connection, which allows any websites to send any request to the development server and read the response.\n\nhttps://github.com/evanw/esbuild/blob/df815ac27b84f8b34374c9182a93c94718f8a630/pkg/api/serve_other.go#L121\nhttps://github.com/evanw/esbuild/blob/df815ac27b84f8b34374c9182a93c94718f8a630/pkg/api/serve_other.go#L363\n\n**Attack scenario**:\n\n1. The attacker serves a malicious web page (`http://malicious.example.com`).\n1. The user accesses the malicious web page.\n1. The attacker sends a `fetch('http://127.0.0.1:8000/main.js')` request by JS in that malicious web page. This request is normally blocked by same-origin policy, but that's not the case for the reasons above.\n1. The attacker gets the content of `http://127.0.0.1:8000/main.js`.\n\nIn this scenario, I assumed that the attacker knows the URL of the bundle output file name. But the attacker can also get that information by\n\n- Fetching `/index.html`: normally you have a script tag here\n- Fetching `/assets`: it's common to have a `assets` directory when you have JS files and CSS files in a different directory and the directory listing feature tells the attacker the list of files\n- Connecting `/esbuild` SSE endpoint: the SSE endpoint sends the URL path of the changed files when the file is changed (`new EventSource('/esbuild').addEventListener('change', e => console.log(e.type, e.data))`)\n- Fetching URLs in the known file: once the attacker knows one file, the attacker can know the URLs imported from that file\n\nThe scenario above fetches the compiled content, but if the victim has the source map option enabled, the attacker can also get the non-compiled content by fetching the source map file.\n\n### PoC\n\n1. Download [reproduction.zip](https://github.com/user-attachments/files/18561484/reproduction.zip)\n2. Extract it and move to that directory\n1. Run `npm i`\n1. Run `npm run watch`\n1. Run `fetch('http://127.0.0.1:8000/app.js').then(r => r.text()).then(content => console.log(content))` in a different website's dev tools.\n\n![image](https://github.com/user-attachments/assets/08fc2e4d-e1ec-44ca-b0ea-78a73c3c40e9)\n\n### Impact\n\nUsers using the serve feature may get the source code stolen by malicious websites.",
+      "reported_by": null,
+      "title": "esbuild enables any website to send any requests to the development server and read the response",
+      "metadata": null,
+      "cves": [],
+      "access": "public",
+      "severity": "moderate",
+      "module_name": "esbuild",
+      "vulnerable_versions": "<=0.24.2",
+      "github_advisory_id": "GHSA-67mh-4wv8-2f99",
+      "recommendation": "Upgrade to version 0.25.0 or later",
+      "patched_versions": ">=0.25.0",
+      "updated": "2025-02-10T17:48:08.000Z",
+      "cvss": {
+        "score": 5.3,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N"
+      },
+      "cwe": [
+        "CWE-346"
+      ],
+      "url": "https://github.com/advisories/GHSA-67mh-4wv8-2f99"
+    },
+    "1104501": {
+      "findings": [
+        {
+          "version": "5.28.5",
+          "paths": []
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/nodejs/undici/security/advisories/GHSA-cxrh-j4jr-qwg3\n- https://github.com/nodejs/undici/issues/3895\n- https://github.com/nodejs/undici/pull/4088\n- https://nvd.nist.gov/vuln/detail/CVE-2025-47279\n- https://github.com/advisories/GHSA-cxrh-j4jr-qwg3",
+      "created": "2025-05-15T14:15:06.000Z",
+      "id": 1104501,
+      "npm_advisory_id": null,
+      "overview": "### Impact\n\nApplications that use undici to implement a webhook-like system are vulnerable. If the attacker set up a server with an invalid certificate, and they can force the application to call the webhook repeatedly, then they can cause a memory leak. \n\n### Patches\n\nThis has been patched in https://github.com/nodejs/undici/pull/4088.\n\n### Workarounds\n\nIf a webhook fails, avoid keep calling it repeatedly.\n\n### References\n\nReported as: https://github.com/nodejs/undici/issues/3895",
+      "reported_by": null,
+      "title": "undici Denial of Service attack via bad certificate data",
+      "metadata": null,
+      "cves": [
+        "CVE-2025-47279"
+      ],
+      "access": "public",
+      "severity": "low",
+      "module_name": "undici",
+      "vulnerable_versions": "<5.29.0",
+      "github_advisory_id": "GHSA-cxrh-j4jr-qwg3",
+      "recommendation": "Upgrade to version 5.29.0 or later",
+      "patched_versions": ">=5.29.0",
+      "updated": "2025-05-16T02:07:01.000Z",
+      "cvss": {
+        "score": 3.1,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:L"
+      },
+      "cwe": [
+        "CWE-401"
+      ],
+      "url": "https://github.com/advisories/GHSA-cxrh-j4jr-qwg3"
+    },
+    "1105443": {
+      "findings": [
+        {
+          "version": "1.1.11",
+          "paths": []
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://nvd.nist.gov/vuln/detail/CVE-2025-5889\n- https://github.com/juliangruber/brace-expansion/pull/65/commits/a5b98a4f30d7813266b221435e1eaaf25a1b0ac5\n- https://gist.github.com/mmmsssttt404/37a40ce7d6e5ca604858fe30814d9466\n- https://vuldb.com/?ctiid.311660\n- https://vuldb.com/?id.311660\n- https://vuldb.com/?submit.585717\n- https://github.com/juliangruber/brace-expansion/commit/0b6a9781e18e9d2769bb2931f4856d1360243ed2\n- https://github.com/juliangruber/brace-expansion/commit/15f9b3c75ebf5988198241fecaebdc45eff28a9f\n- https://github.com/juliangruber/brace-expansion/commit/36603d5f3599a37af9e85eda30acd7d28599c36e\n- https://github.com/juliangruber/brace-expansion/commit/c3c73c8b088defc70851843be88ccc3af08e7217\n- https://github.com/advisories/GHSA-v6h2-p8h4-qcjw",
+      "created": "2025-06-09T21:30:51.000Z",
+      "id": 1105443,
+      "npm_advisory_id": null,
+      "overview": "A vulnerability was found in juliangruber brace-expansion up to 1.1.11/2.0.1/3.0.0/4.0.0. It has been rated as problematic. Affected by this issue is the function expand of the file index.js. The manipulation leads to inefficient regular expression complexity. The attack may be launched remotely. The complexity of an attack is rather high. The exploitation is known to be difficult. The exploit has been disclosed to the public and may be used. Upgrading to version 1.1.12, 2.0.2, 3.0.1 and 4.0.1 is able to address this issue. The name of the patch is `a5b98a4f30d7813266b221435e1eaaf25a1b0ac5`. It is recommended to upgrade the affected component.",
+      "reported_by": null,
+      "title": "brace-expansion Regular Expression Denial of Service vulnerability",
+      "metadata": null,
+      "cves": [
+        "CVE-2025-5889"
+      ],
+      "access": "public",
+      "severity": "low",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=1.0.0 <=1.1.11",
+      "github_advisory_id": "GHSA-v6h2-p8h4-qcjw",
+      "recommendation": "Upgrade to version 1.1.12 or later",
+      "patched_versions": ">=1.1.12",
+      "updated": "2025-06-11T21:00:29.000Z",
+      "cvss": {
+        "score": 3.1,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:L"
+      },
+      "cwe": [
+        "CWE-400"
+      ],
+      "url": "https://github.com/advisories/GHSA-v6h2-p8h4-qcjw"
+    },
+    "1105444": {
+      "findings": [
+        {
+          "version": "2.0.1",
+          "paths": []
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://nvd.nist.gov/vuln/detail/CVE-2025-5889\n- https://github.com/juliangruber/brace-expansion/pull/65/commits/a5b98a4f30d7813266b221435e1eaaf25a1b0ac5\n- https://gist.github.com/mmmsssttt404/37a40ce7d6e5ca604858fe30814d9466\n- https://vuldb.com/?ctiid.311660\n- https://vuldb.com/?id.311660\n- https://vuldb.com/?submit.585717\n- https://github.com/juliangruber/brace-expansion/commit/0b6a9781e18e9d2769bb2931f4856d1360243ed2\n- https://github.com/juliangruber/brace-expansion/commit/15f9b3c75ebf5988198241fecaebdc45eff28a9f\n- https://github.com/juliangruber/brace-expansion/commit/36603d5f3599a37af9e85eda30acd7d28599c36e\n- https://github.com/juliangruber/brace-expansion/commit/c3c73c8b088defc70851843be88ccc3af08e7217\n- https://github.com/advisories/GHSA-v6h2-p8h4-qcjw",
+      "created": "2025-06-09T21:30:51.000Z",
+      "id": 1105444,
+      "npm_advisory_id": null,
+      "overview": "A vulnerability was found in juliangruber brace-expansion up to 1.1.11/2.0.1/3.0.0/4.0.0. It has been rated as problematic. Affected by this issue is the function expand of the file index.js. The manipulation leads to inefficient regular expression complexity. The attack may be launched remotely. The complexity of an attack is rather high. The exploitation is known to be difficult. The exploit has been disclosed to the public and may be used. Upgrading to version 1.1.12, 2.0.2, 3.0.1 and 4.0.1 is able to address this issue. The name of the patch is `a5b98a4f30d7813266b221435e1eaaf25a1b0ac5`. It is recommended to upgrade the affected component.",
+      "reported_by": null,
+      "title": "brace-expansion Regular Expression Denial of Service vulnerability",
+      "metadata": null,
+      "cves": [
+        "CVE-2025-5889"
+      ],
+      "access": "public",
+      "severity": "low",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=2.0.0 <=2.0.1",
+      "github_advisory_id": "GHSA-v6h2-p8h4-qcjw",
+      "recommendation": "Upgrade to version 2.0.2 or later",
+      "patched_versions": ">=2.0.2",
+      "updated": "2025-06-11T21:00:29.000Z",
+      "cvss": {
+        "score": 3.1,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:L"
+      },
+      "cwe": [
+        "CWE-400"
+      ],
+      "url": "https://github.com/advisories/GHSA-v6h2-p8h4-qcjw"
+    }
+  },
+  "muted": [],
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 3,
+      "moderate": 2,
+      "high": 0,
+      "critical": 0
+    },
+    "dependencies": 781,
+    "devDependencies": 0,
+    "optionalDependencies": 0,
+    "totalDependencies": 781
+  }
+}

@@ -29,6 +29,7 @@ export default function Layout({ children }: LayoutProps) {
     { name: 'Projects', href: '/projects', icon: FolderIcon, description: 'Manage your projects' },
     { name: 'Quick Scan', href: '/scan-file', icon: Upload, description: 'Simple file scanner' },
     { name: 'Deep Scan', href: '/security', icon: ShieldCheckIcon, description: 'Comprehensive analysis' },
+    { name: 'GitHub Scan', href: '/github-scan', icon: FolderIcon, description: 'Enterprise GitHub scanner' },
     { name: 'Activity', href: '/activity', icon: Activity, description: 'Recent scans and logs' },
     { name: 'Debug', href: '/debug', icon: Bug, description: 'Debug tools' },
   ]

@@ -1010,6 +1010,14 @@ try:
 except ImportError as e:
     print(f"Comprehensive scanner routes not loaded: {e}")
 
+# Load enterprise GitHub scanner
+try:
+    from app.api.enterprise_github_scan import router as enterprise_github_router
+    app.include_router(enterprise_github_router, prefix="/api", tags=["Enterprise GitHub Scanner"])
+    print("Enterprise GitHub scanner routes loaded successfully")
+except ImportError as e:
+    print(f"Enterprise GitHub scanner routes not loaded: {e}")
+
 async def generate_ai_security_insights(scan_results: dict, all_findings: list, repository_url: str, total_issues: int, total_secrets: int) -> dict:
     """Generate AI-powered security insights using Claude API"""
     try:

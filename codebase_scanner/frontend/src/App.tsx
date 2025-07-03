@@ -15,6 +15,7 @@ import DebugPage from './pages/DebugPage'
 import LoadingSpinner from './components/ui/LoadingSpinner'
 import UniversalScanPage from './pages/UniversalScanPage'
 import { ComprehensiveScan } from './components/ComprehensiveScan'
+import { EnterpriseGitHubScan } from './components/EnterpriseGitHubScan'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -57,6 +58,7 @@ function App() {
           <Route path="/debug" element={<DebugPage />} />
           <Route path="/scan-file" element={<UniversalScanPage />} />
           <Route path="/security" element={<ComprehensiveScan />} />
+          <Route path="/github-scan" element={<EnterpriseGitHubScan />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Layout>

@@ -372,8 +372,10 @@ export const ComprehensiveScan: React.FC = () => {
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h3 className="text-xl font-bold mb-4">Detailed Security Findings</h3>
               
-              {Object.entries(scanResults.results?.findings || {}).map(([category, findings]: [string, any[]]) => (
-                findings.length > 0 && (
+              {Object.entries(scanResults.results?.findings || {}).map(([category, findings]) => {
+                if (!Array.isArray(findings) || findings.length === 0) return null;
+                
+                return (
                   <div key={category} className="mb-6">
                     <h4 className="font-semibold mb-3 flex items-center">
                       {getCategoryIcon(category)}
@@ -382,7 +384,7 @@ export const ComprehensiveScan: React.FC = () => {
                     </h4>
                     
                     <div className="space-y-3">
-                      {findings.slice(0, 5).map((finding, idx) => (
+                      {findings.slice(0, 5).map((finding: any, idx: number) => (
                         <div key={idx} className="border rounded-lg p-4 hover:bg-gray-50">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -408,8 +410,8 @@ export const ComprehensiveScan: React.FC = () => {
                       )}
                     </div>
                   </div>
-                )
-              ))}
+                );
+              })}
             </div>
 
             {/* AI Analysis */}
