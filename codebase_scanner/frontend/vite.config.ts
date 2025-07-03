@@ -28,8 +28,6 @@ export default defineConfig({
       '@supabase/realtime-js',
       '@supabase/storage-js',
       '@supabase/functions-js',
-      'framer-motion',
-      'motion-utils',
     ],
     esbuildOptions: {
       define: {
