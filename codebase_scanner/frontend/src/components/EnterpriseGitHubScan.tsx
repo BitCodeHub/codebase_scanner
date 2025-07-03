@@ -541,7 +541,7 @@ export const EnterpriseGitHubScan: React.FC = () => {
                         'bg-yellow-50 text-yellow-700'
                       }`}>
                         <p className="font-medium text-sm">{standard.replace(/_/g, ' ')}</p>
-                        <p className="text-xs mt-1">{status}</p>
+                        <p className="text-xs mt-1">{String(status)}</p>
                       </div>
                     )
                   )}
