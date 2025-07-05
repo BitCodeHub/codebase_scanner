@@ -735,22 +735,26 @@ async def scan_comprehensive(request: dict):
         print(f"Repository: {repository_url}")
         print(f"Running all 15 security tools...")
         
-        # Use enhanced scanner for thorough analysis
-        from app.enhanced_scanner import EnhancedSecurityScanner
-        scanner = EnhancedSecurityScanner()
+        # Use ENTERPRISE scanner for professional-grade analysis
+        from app.enterprise_scanner import EnterpriseSecurityScanner
+        scanner = EnterpriseSecurityScanner()
         scan_result = scanner.scan_repository(repository_url, branch)
         
         if "error" in scan_result:
             return scan_result
         
-        print(f"\n📊 Scan completed with {scan_result.get('total_findings', 0)} findings")
+        print(f"\n✅ ENTERPRISE SCAN COMPLETE")
+        print(f"Total Findings: {scan_result.get('total_findings', 0)}")
+        print(f"Risk Score: {scan_result.get('risk_score', 0)}/100")
+        print(f"Risk Level: {scan_result.get('risk_level', 'UNKNOWN')}")
         
         # Store in database
         try:
             from src.database import get_supabase_client
             supabase = get_supabase_client()
             
-            # Create scan record
+            # Create scan record with enterprise data
+            severity_dist = scan_result.get("statistics", {}).get("severity_distribution", {})
             scan_data = {
                 "user_id": user_id,
                 "project_id": int(project_id) if project_id and project_id.isdigit() else None,
@@ -758,18 +762,24 @@ async def scan_comprehensive(request: dict):
                 "status": "completed",
                 "triggered_by": "manual",
                 "branch": branch,
-                "total_issues": scan_result["total_findings"],
-                "critical_issues": scan_result["findings_by_severity"]["critical"],
-                "high_issues": scan_result["findings_by_severity"]["high"],
-                "medium_issues": scan_result["findings_by_severity"]["medium"],
-                "low_issues": scan_result["findings_by_severity"]["low"],
-                "created_at": datetime.utcnow().isoformat(),
+                "total_issues": scan_result.get("total_findings", 0),
+                "critical_issues": severity_dist.get("critical", 0),
+                "high_issues": severity_dist.get("high", 0),
+                "medium_issues": severity_dist.get("medium", 0),
+                "low_issues": severity_dist.get("low", 0),
+                "created_at": scan_result.get("scan_timestamp", datetime.utcnow().isoformat()),
                 "completed_at": datetime.utcnow().isoformat(),
                 "scan_config": {
-                    "tools_used": ["semgrep", "gitleaks", "trufflehog", "detect-secrets", "bandit", "safety", "npm-audit", "retire.js", "eslint-security", "pattern-scanner"],
+                    "scan_id": scan_result.get("scan_id", ""),
+                    "tools_used": scan_result.get("metadata", {}).get("tools_used", []),
                     "repository_url": repository_url,
-                    "comprehensive_scan": True,
-                    "files_scanned": scan_result.get("files_scanned", 0)
+                    "scan_profile": "Enterprise Comprehensive",
+                    "files_scanned": scan_result.get("statistics", {}).get("files_analyzed", 0),
+                    "lines_scanned": scan_result.get("statistics", {}).get("lines_analyzed", 0),
+                    "risk_score": scan_result.get("risk_score", 0),
+                    "risk_level": scan_result.get("risk_level", ""),
+                    "scan_duration": scan_result.get("scan_duration", ""),
+                    "executive_summary": scan_result.get("executive_summary", "")[:1000]  # Truncate for storage
                 }
             }
             
@@ -779,27 +789,39 @@ async def scan_comprehensive(request: dict):
                 actual_scan_id = scan_response.data[0]["id"]
                 print(f"✅ Scan created with ID: {actual_scan_id}")
                 
-                # Store detailed findings (limit to 500 to avoid database overload)
-                if scan_result["all_findings"]:
+                # Store detailed findings from enterprise scanner
+                findings = scan_result.get("findings", [])
+                if findings:
                     scan_results_data = []
-                    findings_to_store = scan_result["all_findings"][:500]  # Limit to 500 findings
+                    findings_to_store = findings[:500]  # Limit to 500 findings
                     
                     for finding in findings_to_store:
+                        # Extract comprehensive data from enterprise findings
                         result_data = {
                             "scan_id": actual_scan_id,
                             "analyzer": finding.get("tool", "unknown"),
                             "rule_id": finding.get("rule_id", ""),
                             "severity": finding.get("severity", "medium"),
-                            "title": finding.get("title", "Security Finding")[:500],  # Limit title length
-                            "description": finding.get("description", "")[:2000],  # Limit description length
+                            "title": finding.get("title", "Security Finding")[:500],
+                            "description": finding.get("description", "")[:2000],
                             "file_path": finding.get("file_path", "")[:500],
                             "line_number": finding.get("line_number", 0),
-                            "code_snippet": finding.get("code_snippet", "")[:1000],  # Limit code snippet length
-                            "category": "security",
-                            "vulnerability_type": "security",
-                            "confidence": "high",
-                            "fix_recommendation": get_fix_recommendation(finding.get("rule_id", ""))
+                            "code_snippet": finding.get("code_snippet", "")[:1000],
+                            "category": finding.get("category", "security"),
+                            "vulnerability_type": finding.get("category", "security"),
+                            "confidence": finding.get("confidence", "HIGH"),
+                            "fix_recommendation": finding.get("fix_recommendation", get_fix_recommendation(finding.get("rule_id", ""))),
+                            "owasp_category": finding.get("owasp", ""),
+                            "cwe": finding.get("cwe", ""),
+                            "cvss_score": finding.get("cvss_score", 5.0)
                         }
+                        
+                        # Add additional enterprise fields if available
+                        if "cve" in finding:
+                            result_data["cve"] = finding["cve"][:100]
+                        if "references" in finding and isinstance(finding["references"], list):
+                            result_data["references"] = ", ".join(finding["references"][:3])[:500]
+                        
                         scan_results_data.append(result_data)
                     
                     if scan_results_data:
@@ -810,34 +832,45 @@ async def scan_comprehensive(request: dict):
                         
                         print(f"✅ Stored {len(scan_results_data)} findings in database")
                         
-                        if len(scan_result["all_findings"]) > 500:
-                            print(f"⚠️  Note: Total findings ({len(scan_result['all_findings'])}) exceeded limit. Stored first 500.")
+                        if scan_result.get("total_findings", 0) > 500:
+                            print(f"⚠️  Note: Total findings ({scan_result['total_findings']}) exceeded limit. Stored first 500.")
                 
                 return {
                     "id": actual_scan_id,
                     "project_id": project_id,
                     "status": "completed",
-                    "message": "Comprehensive security scan completed successfully",
+                    "message": "Enterprise security scan completed successfully",
                     "summary": {
-                        "total_findings": scan_result["total_findings"],
-                        "critical": scan_result["findings_by_severity"]["critical"],
-                        "high": scan_result["findings_by_severity"]["high"],
-                        "medium": scan_result["findings_by_severity"]["medium"],
-                        "low": scan_result["findings_by_severity"]["low"],
-                        "tools_run": scan_result["tools_run"]
+                        "total_findings": scan_result.get("total_findings", 0),
+                        "critical": severity_dist.get("critical", 0),
+                        "high": severity_dist.get("high", 0),
+                        "medium": severity_dist.get("medium", 0),
+                        "low": severity_dist.get("low", 0),
+                        "tools_run": scan_result.get("tools_executed", 0),
+                        "risk_score": scan_result.get("risk_score", 0),
+                        "risk_level": scan_result.get("risk_level", "UNKNOWN")
                     },
-                    "tools_results": scan_result["detailed_results"]
+                    "executive_summary": scan_result.get("executive_summary", ""),
+                    "statistics": scan_result.get("statistics", {}),
+                    "compliance_status": scan_result.get("compliance_status", {}),
+                    "recommendations": scan_result.get("recommendations", {}),
+                    "metadata": scan_result.get("metadata", {})
                 }
         
         except Exception as db_error:
             print(f"⚠️ Database storage failed: {str(db_error)}")
             # Return results even if DB storage fails
             return {
-                "id": scan_result["scan_id"],
+                "id": scan_result.get("scan_id", ""),
                 "project_id": project_id,
                 "status": "completed",
-                "message": "Scan completed (database storage failed)",
-                "summary": scan_result["findings_by_severity"],
+                "message": "Enterprise scan completed (database storage failed)",
+                "summary": {
+                    "total_findings": scan_result.get("total_findings", 0),
+                    "risk_score": scan_result.get("risk_score", 0),
+                    "risk_level": scan_result.get("risk_level", "UNKNOWN")
+                },
+                "executive_summary": scan_result.get("executive_summary", ""),
                 "warning": f"Database error: {str(db_error)}"
             }
             
@@ -1522,6 +1555,45 @@ Format your response as JSON with these exact keys:
         return {"error": f"Failed to parse AI response: {str(e)}"}
     except Exception as e:
         return {"error": f"AI analysis failed: {str(e)}"}
+
+@app.post("/api/test/enterprise-scanner")
+async def test_enterprise_scanner():
+    """Test the ENTERPRISE scanner with BitCodeHub/ai-chatbot repository"""
+    try:
+        from app.enterprise_scanner import EnterpriseSecurityScanner
+        
+        print("\n🔍 TESTING ENTERPRISE SCANNER ON BitCodeHub/ai-chatbot")
+        
+        # Test with the user's repository
+        scanner = EnterpriseSecurityScanner()
+        result = scanner.scan_repository("https://github.com/BitCodeHub/ai-chatbot", "main")
+        
+        # Extract key information
+        stats = result.get("statistics", {})
+        
+        return {
+            "success": True,
+            "scan_id": result.get("scan_id", ""),
+            "total_findings": result.get("total_findings", 0),
+            "risk_score": result.get("risk_score", 0),
+            "risk_level": result.get("risk_level", ""),
+            "severity_distribution": stats.get("severity_distribution", {}),
+            "category_distribution": stats.get("category_distribution", {}),
+            "files_analyzed": stats.get("files_analyzed", 0),
+            "lines_analyzed": stats.get("lines_analyzed", 0),
+            "tools_executed": result.get("tools_executed", 0),
+            "tools_failed": result.get("tools_failed", 0),
+            "executive_summary": result.get("executive_summary", "")[:500],  # First 500 chars
+            "compliance_status": result.get("compliance_status", {}),
+            "sample_findings": result.get("findings", [])[:20],  # First 20 findings
+            "recommendations": result.get("recommendations", {})
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
 
 @app.post("/api/test/enhanced-scanner")
 async def test_enhanced_scanner():
