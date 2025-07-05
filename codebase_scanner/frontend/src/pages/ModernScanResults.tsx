@@ -96,6 +96,7 @@ export default function ModernScanResults() {
   const [retryCount, setRetryCount] = useState(0)
   const [retryTimer, setRetryTimer] = useState<NodeJS.Timeout | null>(null)
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null)
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -214,17 +215,21 @@ export default function ModernScanResults() {
         
         const interval = setInterval(() => {
           console.log('Auto-refreshing running scan...')
-          // Only refresh if not already refreshing to prevent overlap
-          if (!refreshing) {
+          // Only refresh if not already refreshing and not transitioning
+          if (!refreshing && !isTransitioning) {
             handleRefresh()
           }
         }, 10000) // 10 seconds to reduce flickering
         setAutoRefreshInterval(interval)
       } else {
-        // Clear interval for completed scans
+        // Clear interval for completed scans with a delay to prevent flickering
         if (autoRefreshInterval) {
-          clearInterval(autoRefreshInterval)
-          setAutoRefreshInterval(null)
+          setIsTransitioning(true)
+          setTimeout(() => {
+            clearInterval(autoRefreshInterval)
+            setAutoRefreshInterval(null)
+            setIsTransitioning(false)
+          }, 1000) // 1 second delay for smooth transition
         }
       }
     } catch (error) {
@@ -289,6 +294,69 @@ export default function ModernScanResults() {
     const filesScanned = summary.match(/(\d+,?\d*) files/)?.[1]
     const linesScanned = summary.match(/(\d+,?\d*) lines of code/)?.[1]
     
+    // Function to find and highlight vulnerability references
+    const renderFindingWithLinks = (finding: string) => {
+      // Match patterns like "SQL injection vulnerabilities", "hardcoded credentials", etc.
+      const vulnerabilityPatterns = [
+        /SQL injection/gi,
+        /hardcoded (credentials|api keys?|secrets?)/gi,
+        /JWT secrets?/gi,
+        /API keys?/gi,
+        /authentication bypass/gi,
+        /insecure cryptography/gi,
+        /XSS vulnerabilities/gi,
+        /CSRF/gi,
+        /path traversal/gi,
+        /command injection/gi,
+        /security misconfiguration/gi,
+        /sensitive data exposure/gi
+      ]
+      
+      let processedFinding = finding
+      let hasClickableItems = false
+      
+      vulnerabilityPatterns.forEach(pattern => {
+        if (pattern.test(finding)) {
+          hasClickableItems = true
+          processedFinding = processedFinding.replace(pattern, (match) => {
+            return `<span class="text-blue-400 underline cursor-pointer hover:text-blue-300" data-issue-type="${match}">${match}</span>`
+          })
+        }
+      })
+      
+      return { processedFinding, hasClickableItems }
+    }
+    
+    const handleFindingClick = (issueType: string) => {
+      // Find matching results
+      const matchingResults = results.filter(r => 
+        r.title.toLowerCase().includes(issueType.toLowerCase()) ||
+        r.description?.toLowerCase().includes(issueType.toLowerCase()) ||
+        r.vulnerability_type?.toLowerCase().includes(issueType.toLowerCase())
+      )
+      
+      if (matchingResults.length > 0) {
+        // Expand the first matching result
+        const firstMatch = matchingResults[0]
+        const newExpanded = new Set(expandedResults)
+        newExpanded.add(firstMatch.id)
+        setExpandedResults(newExpanded)
+        
+        // Scroll to the element after a short delay
+        setTimeout(() => {
+          const element = document.querySelector(`[data-result-id="${firstMatch.id}"]`)
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            // Add a highlight effect
+            element.classList.add('ring-2', 'ring-blue-500', 'ring-opacity-50')
+            setTimeout(() => {
+              element.classList.remove('ring-2', 'ring-blue-500', 'ring-opacity-50')
+            }, 3000)
+          }
+        }, 100)
+      }
+    }
+    
     return (
       <div className="space-y-6">
         {/* Risk Assessment */}
@@ -330,20 +398,85 @@ export default function ModernScanResults() {
           </div>
         </div>
 
-        {/* Key Findings */}
+        {/* Interactive Top Issues */}
+        {results.length > 0 && (results.filter(r => r.severity === 'critical' || r.severity === 'high').length > 0) && (
+          <div className="bg-gradient-to-r from-red-500/10 to-pink-500/10 rounded-lg p-4 border border-red-500/20">
+            <h4 className="text-white font-semibold mb-3 flex items-center space-x-2">
+              <XCircle className="w-4 h-4 text-red-400" />
+              <span>Critical Issues Requiring Immediate Action</span>
+              <span className="text-xs text-gray-400">(Click to view details)</span>
+            </h4>
+            <div className="space-y-2">
+              {results
+                .filter(r => r.severity === 'critical' || r.severity === 'high')
+                .slice(0, 5)
+                .map((result) => (
+                  <div 
+                    key={result.id}
+                    data-result-id={result.id}
+                    className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 cursor-pointer transition-all"
+                    onClick={() => {
+                      const newExpanded = new Set(expandedResults)
+                      newExpanded.add(result.id)
+                      setExpandedResults(newExpanded)
+                      
+                      setTimeout(() => {
+                        const element = document.querySelector(`[data-result-id="${result.id}"]`)
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        }
+                      }, 100)
+                    }}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                        result.severity === 'critical' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'
+                      }`}>
+                        {result.severity.toUpperCase()}
+                      </span>
+                      <div>
+                        <p className="text-sm text-gray-300 font-medium">{result.title}</p>
+                        <p className="text-xs text-gray-500">{result.file_path}</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                  </div>
+                ))}
+            </div>
+            {results.filter(r => r.severity === 'critical' || r.severity === 'high').length > 5 && (
+              <p className="text-xs text-gray-400 mt-2">
+                + {results.filter(r => r.severity === 'critical' || r.severity === 'high').length - 5} more critical/high issues
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Key Findings - Interactive */}
         {keyFindings && (
           <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg p-4 border border-purple-500/20">
             <h4 className="text-white font-semibold mb-3 flex items-center space-x-2">
               <Bug className="w-4 h-4 text-purple-400" />
               <span>Key Security Findings</span>
+              {results.length > 0 && <span className="text-xs text-gray-400">(Click vulnerabilities to jump to details)</span>}
             </h4>
             <div className="text-gray-300 text-sm leading-relaxed">
-              {keyFindings.split('•').filter(item => item.trim()).map((finding, index) => (
-                <div key={index} className="flex items-start space-x-2 mb-2">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <span>{finding.trim()}</span>
-                </div>
-              ))}
+              {keyFindings.split('•').filter(item => item.trim()).map((finding, index) => {
+                const { processedFinding, hasClickableItems } = renderFindingWithLinks(finding.trim())
+                return (
+                  <div key={index} className="flex items-start space-x-2 mb-2">
+                    <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
+                    <span 
+                      dangerouslySetInnerHTML={{ __html: processedFinding }}
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement
+                        if (target.dataset.issueType) {
+                          handleFindingClick(target.dataset.issueType)
+                        }
+                      }}
+                    />
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
@@ -833,6 +966,7 @@ export default function ModernScanResults() {
               return (
                 <div
                   key={result.id}
+                  data-result-id={result.id}
                   className={`bg-gradient-to-br ${severityConfig.bgGradient} backdrop-blur-xl rounded-xl border border-gray-700/50 hover:border-gray-600/50 transition-all`}
                 >
                   <div
@@ -973,11 +1107,24 @@ export default function ModernScanResults() {
               <CheckCircle className="w-12 h-12 text-green-400" />
             </div>
             <h3 className="text-2xl font-semibold text-white mb-2">
-              All clear!
+              {scan.total_issues > 0 ? 'No matching results' : 'All clear!'}
             </h3>
             <p className="text-gray-400 max-w-md mx-auto">
-              No security vulnerabilities were detected in this scan. Your code is looking secure!
+              {scan.total_issues > 0 
+                ? `No results match your current filters. Total issues found: ${scan.total_issues}`
+                : 'No security vulnerabilities were detected in this scan. Your code is looking secure!'}
             </p>
+            {scan.total_issues > 0 && (
+              <button
+                onClick={() => {
+                  setSelectedSeverity('all')
+                  setSearchQuery('')
+                }}
+                className="mt-4 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
         )}
       </main>
