@@ -2,7 +2,7 @@
 FastAPI backend for Codebase Scanner
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import os
@@ -1423,39 +1423,53 @@ except ImportError as e:
     
     # Create database-connected fallback endpoints
     @app.post("/api/projects/")
-    async def create_project(project_data: dict):
-        """Database-connected project creation endpoint"""
+    async def create_project(project_data: dict, authorization: str = Header(None)):
+        """Database-connected project creation endpoint with authentication"""
         try:
             from datetime import datetime
             import os
             from supabase import create_client
             import uuid
+            import json
+            import base64
             
             # Get Supabase credentials
             url = os.getenv("SUPABASE_URL")
             key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
             
             if not url or not key:
-                # If no database, return a mock project
-                return {
-                    "id": str(uuid.uuid4())[:8],
-                    "name": project_data.get("name", "Test Project"),
-                    "description": project_data.get("description"),
-                    "repository_url": project_data.get("repository_url"),
-                    "created_at": datetime.utcnow().isoformat() + "Z",
-                    "updated_at": datetime.utcnow().isoformat() + "Z",
-                    "active": True,
-                    "warning": "No database configured - this is a temporary project"
-                }
+                raise HTTPException(status_code=500, detail="Database not configured")
+            
+            # Extract user ID from authorization token
+            if not authorization or not authorization.startswith("Bearer "):
+                raise HTTPException(status_code=401, detail="Authorization header required")
+            
+            token = authorization.replace("Bearer ", "")
+            
+            # Decode JWT to get user ID
+            try:
+                parts = token.split('.')
+                if len(parts) != 3:
+                    raise ValueError("Invalid token format")
+                
+                # Decode payload
+                payload = parts[1]
+                padding = 4 - len(payload) % 4
+                if padding != 4:
+                    payload += '=' * padding
+                    
+                decoded = base64.urlsafe_b64decode(payload)
+                token_data = json.loads(decoded)
+                user_id = token_data.get("sub")
+                
+                if not user_id:
+                    raise ValueError("No user ID in token")
+                    
+            except Exception as e:
+                raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
             
             # Create Supabase client
             supabase = create_client(url, key)
-            
-            # Get user ID from the request (would normally come from auth)
-            user_id = project_data.get("user_id")
-            if not user_id:
-                # Try to get from session or use a default
-                user_id = "00000000-0000-0000-0000-000000000000"  # Default user ID
             
             # Create project in database
             db_data = {
