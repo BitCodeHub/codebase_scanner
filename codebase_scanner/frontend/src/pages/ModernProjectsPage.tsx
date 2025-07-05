@@ -158,6 +158,7 @@ export default function ModernProjectsPage() {
 
       const scanResult = await response.json()
       console.log('Scan initiated:', scanResult)
+      console.log('Scan ID received:', scanResult.id)
       
       // Show success notification
       showNotification('success', 'Security scan started successfully!')
@@ -169,9 +170,17 @@ export default function ModernProjectsPage() {
 
       // Navigate to scan results if we have an ID
       if (scanResult.id) {
+        console.log(`Navigating to scan results page: /scans/${scanResult.id}/results`)
+        showNotification('success', 'Scan completed! Redirecting to results...')
+        
+        // Give the database more time to commit the transaction
         setTimeout(() => {
+          console.log(`Actually navigating now to: /scans/${scanResult.id}/results`)
           navigate(`/scans/${scanResult.id}/results`)
-        }, 1500)
+        }, 3000)  // Increased to 3 seconds
+      } else {
+        console.error('No scan ID received in response:', scanResult)
+        showNotification('error', 'Scan started but no ID received')
       }
     } catch (error) {
       console.error('Error starting scan:', error)

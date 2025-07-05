@@ -835,6 +835,17 @@ async def scan_comprehensive(request: dict):
                         if scan_result.get("total_findings", 0) > 500:
                             print(f"⚠️  Note: Total findings ({scan_result['total_findings']}) exceeded limit. Stored first 500.")
                 
+                # Add a small delay to ensure database commits are processed
+                import time
+                time.sleep(0.5)
+                
+                # Verify the scan was created by fetching it
+                verify_scan = supabase.table("scans").select("*").eq("id", actual_scan_id).execute()
+                if not verify_scan.data:
+                    print(f"⚠️  Warning: Scan {actual_scan_id} not found immediately after creation")
+                else:
+                    print(f"✅ Verified scan {actual_scan_id} exists in database")
+                
                 return {
                     "id": actual_scan_id,
                     "project_id": project_id,

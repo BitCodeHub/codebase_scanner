@@ -81,6 +81,7 @@ export default function ModernScanResults() {
   const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [refreshing, setRefreshing] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
     if (id) {
@@ -98,12 +99,27 @@ export default function ModernScanResults() {
 
     try {
       setLoading(true)
+      console.log(`Loading scan data for ID: ${id}`)
       
       // Load scan details
       const { data: scanData, error: scanError } = await db.scans.get(parseInt(id))
+      console.log('Scan query result:', { scanData, scanError })
       
       if (scanError || !scanData) {
         console.error('Error loading scan:', scanError)
+        
+        // Retry up to 3 times with exponential backoff
+        if (retryCount < 3) {
+          console.log(`Retrying scan load (attempt ${retryCount + 1}/3)...`)
+          setRetryCount(prev => prev + 1)
+          setTimeout(() => {
+            loadScanData()
+          }, (retryCount + 1) * 1000) // 1s, 2s, 3s delays
+          return
+        }
+        
+        setScan(null)
+        setLoading(false)
         return
       }
 
@@ -115,6 +131,9 @@ export default function ModernScanResults() {
         }
       }
 
+      // Reset retry count on successful load
+      setRetryCount(0)
+      
       setScan(scanData as Scan)
       console.log('Loaded scan data:', scanData)
 
@@ -142,12 +161,32 @@ export default function ModernScanResults() {
         setResults(sortedResults)
       }
 
-      // Auto-refresh for running scans
+      // Auto-refresh for running scans or recently created scans
       if (scanData.status === 'running') {
         const interval = setInterval(() => {
+          console.log('Auto-refreshing running scan...')
           loadScanData()
         }, 5000)
         return () => clearInterval(interval)
+      }
+      
+      // If scan was created in the last 30 seconds, poll for results
+      const scanCreatedAt = new Date(scanData.created_at).getTime()
+      const now = new Date().getTime()
+      const ageInSeconds = (now - scanCreatedAt) / 1000
+      
+      if (ageInSeconds < 30 && results.length === 0) {
+        console.log('Scan is fresh, polling for results...')
+        const pollInterval = setInterval(() => {
+          loadScanData()
+        }, 2000)
+        
+        // Stop polling after 30 seconds
+        setTimeout(() => {
+          clearInterval(pollInterval)
+        }, 30000)
+        
+        return () => clearInterval(pollInterval)
       }
     } catch (error) {
       console.error('Error in loadScanData:', error)
@@ -273,17 +312,55 @@ export default function ModernScanResults() {
   if (!scan) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <h2 className="text-2xl font-semibold text-white mb-2">Scan not found</h2>
-          <p className="text-gray-400 mb-6">The scan you're looking for doesn't exist.</p>
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Dashboard</span>
-          </Link>
+          <p className="text-gray-400 mb-2">The scan with ID #{id} could not be found.</p>
+          <p className="text-gray-500 text-sm mb-6">This might happen if the scan is still being processed. Please try again in a few seconds.</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => {
+                setRetryCount(0)
+                setScan(null)
+                setResults([])
+                setLoading(true)
+                loadScanData()
+              }}
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Try Again</span>
+            </button>
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Dashboard</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+            This might happen if the scan is still being processed or if the link is incorrect.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={handleRefresh}
+              className="inline-flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Try Again</span>
+            </button>
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center justify-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Dashboard</span>
+            </Link>
+          </div>
         </div>
       </div>
     )
