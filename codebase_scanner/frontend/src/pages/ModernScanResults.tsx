@@ -95,16 +95,20 @@ export default function ModernScanResults() {
   const [refreshing, setRefreshing] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const [retryTimer, setRetryTimer] = useState<NodeJS.Timeout | null>(null)
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (id) {
       loadScanData()
     }
     
-    // Cleanup function to clear any pending retry timers
+    // Cleanup function to clear any pending timers
     return () => {
       if (retryTimer) {
         clearTimeout(retryTimer)
+      }
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval)
       }
     }
   }, [id])
@@ -203,6 +207,11 @@ export default function ModernScanResults() {
       // Auto-refresh for running scans only - prevent flickering
       if (scanData.status === 'running') {
         console.log('Scan is running, setting up auto-refresh...')
+        // Clear any existing interval first
+        if (autoRefreshInterval) {
+          clearInterval(autoRefreshInterval)
+        }
+        
         const interval = setInterval(() => {
           console.log('Auto-refreshing running scan...')
           // Only refresh if not already refreshing to prevent overlap
@@ -210,7 +219,13 @@ export default function ModernScanResults() {
             handleRefresh()
           }
         }, 10000) // 10 seconds to reduce flickering
-        return () => clearInterval(interval)
+        setAutoRefreshInterval(interval)
+      } else {
+        // Clear interval for completed scans
+        if (autoRefreshInterval) {
+          clearInterval(autoRefreshInterval)
+          setAutoRefreshInterval(null)
+        }
       }
     } catch (error) {
       console.error('Error in loadScanData:', error)
@@ -258,6 +273,139 @@ export default function ModernScanResults() {
     `
     document.body.appendChild(notificationDiv)
     setTimeout(() => notificationDiv.remove(), 3000)
+  }
+
+  const renderExecutiveSummary = (summary: string) => {
+    // Parse the executive summary and organize it into professional sections
+    const keyFindings = summary.match(/KEY FINDINGS:(.+?)(?=SECURITY POSTURE:|$)/s)?.[1]?.trim()
+    const securityPosture = summary.match(/SECURITY POSTURE:(.+?)(?=BUSINESS IMPACT:|$)/s)?.[1]?.trim()
+    const businessImpact = summary.match(/BUSINESS IMPACT:(.+?)(?=Tool Success Rate:|$)/s)?.[1]?.trim()
+    
+    // Extract metrics
+    const riskLevel = summary.match(/Risk Level: (\w+)/)?.[1]
+    const issuesCount = summary.match(/(\d+) total security vulnerabilities/)?.[1]
+    const criticalIssues = summary.match(/(\d+) CRITICAL issues/)?.[1]
+    const highIssues = summary.match(/(\d+) HIGH severity issues/)?.[1]
+    const filesScanned = summary.match(/(\d+,?\d*) files/)?.[1]
+    const linesScanned = summary.match(/(\d+,?\d*) lines of code/)?.[1]
+    
+    return (
+      <div className="space-y-6">
+        {/* Risk Assessment */}
+        <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 rounded-lg p-4 border border-red-500/20">
+          <h4 className="text-white font-semibold mb-3 flex items-center space-x-2">
+            <AlertTriangle className="w-4 h-4 text-red-400" />
+            <span>Risk Assessment</span>
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            {riskLevel && (
+              <div>
+                <p className="text-gray-400">Risk Level</p>
+                <p className={`font-bold ${
+                  riskLevel === 'CRITICAL' ? 'text-red-400' :
+                  riskLevel === 'HIGH' ? 'text-orange-400' :
+                  riskLevel === 'MEDIUM' ? 'text-yellow-400' :
+                  'text-green-400'
+                }`}>{riskLevel}</p>
+              </div>
+            )}
+            {issuesCount && (
+              <div>
+                <p className="text-gray-400">Total Issues</p>
+                <p className="text-white font-bold">{issuesCount}</p>
+              </div>
+            )}
+            {criticalIssues && parseInt(criticalIssues) > 0 && (
+              <div>
+                <p className="text-gray-400">Critical</p>
+                <p className="text-red-400 font-bold">{criticalIssues}</p>
+              </div>
+            )}
+            {highIssues && parseInt(highIssues) > 0 && (
+              <div>
+                <p className="text-gray-400">High</p>
+                <p className="text-orange-400 font-bold">{highIssues}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Key Findings */}
+        {keyFindings && (
+          <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg p-4 border border-purple-500/20">
+            <h4 className="text-white font-semibold mb-3 flex items-center space-x-2">
+              <Bug className="w-4 h-4 text-purple-400" />
+              <span>Key Security Findings</span>
+            </h4>
+            <div className="text-gray-300 text-sm leading-relaxed">
+              {keyFindings.split('•').filter(item => item.trim()).map((finding, index) => (
+                <div key={index} className="flex items-start space-x-2 mb-2">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
+                  <span>{finding.trim()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Security Posture */}
+        {securityPosture && (
+          <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-lg p-4 border border-blue-500/20">
+            <h4 className="text-white font-semibold mb-3 flex items-center space-x-2">
+              <Shield className="w-4 h-4 text-blue-400" />
+              <span>Security Posture</span>
+            </h4>
+            <p className="text-gray-300 text-sm leading-relaxed">{securityPosture}</p>
+          </div>
+        )}
+
+        {/* Business Impact */}
+        {businessImpact && (
+          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg p-4 border border-amber-500/20">
+            <h4 className="text-white font-semibold mb-3 flex items-center space-x-2">
+              <TrendingUp className="w-4 h-4 text-amber-400" />
+              <span>Business Impact</span>
+            </h4>
+            <p className="text-gray-300 text-sm leading-relaxed">{businessImpact}</p>
+          </div>
+        )}
+
+        {/* Scan Coverage */}
+        {(filesScanned || linesScanned) && (
+          <div className="bg-gradient-to-r from-green-500/10 to-teal-500/10 rounded-lg p-4 border border-green-500/20">
+            <h4 className="text-white font-semibold mb-3 flex items-center space-x-2">
+              <FileCode className="w-4 h-4 text-green-400" />
+              <span>Scan Coverage</span>
+            </h4>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {filesScanned && (
+                <div>
+                  <p className="text-gray-400">Files Analyzed</p>
+                  <p className="text-white font-bold">{filesScanned}</p>
+                </div>
+              )}
+              {linesScanned && (
+                <div>
+                  <p className="text-gray-400">Lines Scanned</p>
+                  <p className="text-white font-bold">{linesScanned}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Fallback for unstructured summary */}
+        {!keyFindings && !securityPosture && !businessImpact && (
+          <div className="bg-gradient-to-r from-gray-500/10 to-gray-600/10 rounded-lg p-4 border border-gray-500/20">
+            <h4 className="text-white font-semibold mb-3 flex items-center space-x-2">
+              <FileCode className="w-4 h-4 text-gray-400" />
+              <span>Executive Summary</span>
+            </h4>
+            <p className="text-gray-300 text-sm leading-relaxed">{summary}</p>
+          </div>
+        )}
+      </div>
+    )
   }
 
   const getSeverityConfig = (severity: string) => {
@@ -670,7 +818,8 @@ export default function ModernScanResults() {
         </div>
 
         {/* Results */}
-        {filteredResults.length > 0 ? (
+        {results.length > 0 ? (
+          filteredResults.length > 0 ? (
           <div className="space-y-4">
             {filteredResults.map((result) => {
               const severityConfig = getSeverityConfig(result.severity)
@@ -792,22 +941,38 @@ export default function ModernScanResults() {
               )
             })}
           </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gray-800/50 mb-6">
+                <AlertTriangle className="w-12 h-12 text-yellow-400" />
+              </div>
+              <h3 className="text-2xl font-semibold text-white mb-2">
+                No results match your current filter
+              </h3>
+              <p className="text-gray-400 max-w-md mx-auto">
+                Try adjusting your search or filters to see the {results.length} security findings.
+              </p>
+              <button
+                onClick={() => {
+                  setSelectedSeverity('all')
+                  setSearchQuery('')
+                }}
+                className="mt-4 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all"
+              >
+                Clear Filters
+              </button>
+            </div>
+          )
         ) : (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gray-800/50 mb-6">
               <CheckCircle className="w-12 h-12 text-green-400" />
             </div>
             <h3 className="text-2xl font-semibold text-white mb-2">
-              {searchQuery || selectedSeverity !== 'all' 
-                ? 'No vulnerabilities found' 
-                : 'All clear!'
-              }
+              All clear!
             </h3>
             <p className="text-gray-400 max-w-md mx-auto">
-              {searchQuery || selectedSeverity !== 'all' 
-                ? 'Try adjusting your search or filters.'
-                : 'No security vulnerabilities were detected in this scan. Your code is looking secure!'
-              }
+              No security vulnerabilities were detected in this scan. Your code is looking secure!
             </p>
           </div>
         )}
