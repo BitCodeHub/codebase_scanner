@@ -62,10 +62,8 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
       
       const result = await createProject({
         name: name.trim(),
-        description: description.trim() || null,
-        repository_url: repositoryUrl.trim() || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        description: description.trim() || undefined,
+        repository_url: repositoryUrl.trim() || undefined
       })
 
       console.log('Project created:', result)
@@ -85,7 +83,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
       onSuccess()
 
       // If scan on create is enabled and we have a repository URL, start a scan
-      if (scanOnCreate && repositoryUrl && result.project?.id) {
+      if (scanOnCreate && repositoryUrl && result?.id) {
         setTimeout(async () => {
           try {
             const { getFullApiUrl } = await import('../../utils/api-config')
@@ -93,7 +91,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                project_id: result.project.id,
+                project_id: result.id,
                 repository_url: repositoryUrl,
                 branch: 'main',
                 scan_type: 'comprehensive',
@@ -292,7 +290,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
             </button>
             <button
               type="submit"
-              disabled={loading || !name.trim() || (repositoryUrl && !isValidGitUrl(repositoryUrl))}
+              disabled={loading || !name.trim() || !!(repositoryUrl && !isValidGitUrl(repositoryUrl))}
               className="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
             >
               {loading ? (
