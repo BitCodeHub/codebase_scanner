@@ -99,7 +99,7 @@ export default function ModernScanResults() {
 
   useEffect(() => {
     if (id) {
-      loadScanData()
+      loadScanData(true) // Initial load
     }
     
     // Cleanup function to clear any pending timers
@@ -118,12 +118,12 @@ export default function ModernScanResults() {
     Prism.highlightAll()
   }, [results])
 
-  const loadScanData = async () => {
+  const loadScanData = async (isInitialLoad = false) => {
     if (!id || refreshing) return // Prevent duplicate loads
 
     try {
       // Only show loading spinner on initial load, not on refresh
-      if (!scan) {
+      if (isInitialLoad && !scan) {
         setLoading(true)
       }
       console.log(`Loading scan data for ID: ${id}`)
@@ -238,7 +238,7 @@ export default function ModernScanResults() {
     if (refreshing) return // Prevent multiple refreshes
     setRefreshing(true)
     try {
-      await loadScanData()
+      await loadScanData() // Refresh - not initial load
     } finally {
       setRefreshing(false)
     }
@@ -471,7 +471,7 @@ export default function ModernScanResults() {
     return matchesSeverity && matchesSearch
   })
 
-  if (loading) {
+  if (loading && !scan) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -479,7 +479,7 @@ export default function ModernScanResults() {
             <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 animate-pulse"></div>
             <Shield className="w-12 h-12 text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <p className="mt-6 text-gray-300 text-lg">Loading scan results...</p>
+          <p className="mt-6 text-gray-300 text-lg">Initializing security dashboard...</p>
         </div>
       </div>
     )
@@ -505,7 +505,7 @@ export default function ModernScanResults() {
                 setScan(null)
                 setResults([])
                 setLoading(true)
-                loadScanData()
+                loadScanData(true) // Manual retry - treat as initial
               }}
               className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
             >
@@ -765,11 +765,15 @@ export default function ModernScanResults() {
                 </div>
               )}
               {scan.scan_config.executive_summary && (
-                <div className="mt-4">
-                  <p className="text-gray-400 text-sm mb-2">Executive Summary:</p>
-                  <p className="text-gray-300 text-sm leading-relaxed">{scan.scan_config.executive_summary}</p>
-                </div>
-              )}
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
+                    <BarChart3 className="w-5 h-5" />
+                    <span>Executive Security Assessment</span>
+                  </h3>
+                  <div className="bg-gradient-to-br from-gray-800/30 to-gray-900/30 rounded-xl p-6 border border-gray-700/30">
+                    {renderExecutiveSummary(scan.scan_config.executive_summary)}
+                  </div>
+                </div>              )}
             </div>
           )}
 
