@@ -136,6 +136,33 @@ Generated on ${new Date().toISOString()}
   const scanConfig = scan.scan_config || {}
   const compliance = scanConfig.compliance_status || {}
   const recommendations = scanConfig.recommendations || {}
+  const hasComprehensiveData = scanConfig.executive_summary || scanConfig.risk_score !== undefined || scanConfig.compliance_status
+
+  // If no comprehensive data is available, show a message
+  if (!hasComprehensiveData && (!results || results.length === 0)) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-8 border border-gray-700/30 text-center">
+          <AlertOctagon className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">Limited Report Data Available</h3>
+          <p className="text-gray-400 mb-6">
+            This scan was run with basic security tools. To generate a comprehensive enterprise report with AI analysis, 
+            risk assessment, and compliance mapping, please run a new scan using the "Comprehensive Security Scan" option.
+          </p>
+          <div className="bg-gray-900/50 rounded-lg p-4 text-left max-w-2xl mx-auto">
+            <p className="text-sm text-gray-300 mb-2">A comprehensive scan includes:</p>
+            <ul className="text-sm text-gray-400 space-y-1">
+              <li>• AI-powered executive summary and risk analysis</li>
+              <li>• Compliance mapping (OWASP, PCI-DSS, SOC 2, GDPR)</li>
+              <li>• Risk scoring and business impact assessment</li>
+              <li>• Detailed remediation roadmap with timelines</li>
+              <li>• Analysis from 15+ enterprise security tools</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -219,6 +246,14 @@ Generated on ${new Date().toISOString()}
                 </div>
               </div>
             </div>
+
+            {/* Executive Summary Text */}
+            {scanConfig.executive_summary && (
+              <div className="bg-gray-900/50 rounded-lg p-6">
+                <h4 className="text-white font-semibold mb-3">Executive Summary</h4>
+                <p className="text-gray-300 whitespace-pre-wrap">{scanConfig.executive_summary}</p>
+              </div>
+            )}
 
             {/* Business Impact */}
             <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-lg p-4 border border-yellow-500/20">

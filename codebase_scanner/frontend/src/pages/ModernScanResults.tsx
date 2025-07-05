@@ -99,6 +99,7 @@ export default function ModernScanResults() {
   const [retryTimer, setRetryTimer] = useState<NodeJS.Timeout | null>(null)
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  // Default to enterprise view if scan_config has comprehensive data
   const [viewMode, setViewMode] = useState<'details' | 'enterprise'>('details')
 
   useEffect(() => {
@@ -183,6 +184,18 @@ export default function ModernScanResults() {
       
       setScan(scanData as Scan)
       console.log('Loaded scan data:', scanData)
+      console.log('scan_config:', scanData.scan_config)
+      console.log('ai_insights:', scanData.ai_insights)
+      
+      // Auto-switch to enterprise view if comprehensive data is available
+      if (scanData.scan_config && (
+        scanData.scan_config.executive_summary || 
+        scanData.scan_config.risk_score !== undefined ||
+        scanData.scan_config.compliance_status ||
+        scanData.scan_config.recommendations
+      )) {
+        setViewMode('enterprise')
+      }
 
       // Load scan results
       const { getSupabase } = await import('../lib/supabase-safe')
@@ -928,36 +941,62 @@ export default function ModernScanResults() {
         </div>
 
         {/* View Mode Toggle */}
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-white">Security Findings</h3>
-          <div className="flex items-center space-x-2 bg-gray-800/50 p-1 rounded-lg">
-            <button
-              onClick={() => setViewMode('details')}
-              className={`px-4 py-2 rounded-md transition-all ${
-                viewMode === 'details'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Bug className="w-4 h-4" />
-                <span>Detailed Findings</span>
-              </div>
-            </button>
-            <button
-              onClick={() => setViewMode('enterprise')}
-              className={`px-4 py-2 rounded-md transition-all ${
-                viewMode === 'enterprise'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <FileText className="w-4 h-4" />
-                <span>Enterprise Report</span>
-              </div>
-            </button>
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-white">Security Assessment Results</h3>
+            <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 p-1 rounded-lg">
+              <button
+                onClick={() => setViewMode('details')}
+                className={`px-6 py-2.5 rounded-md transition-all ${
+                  viewMode === 'details'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Bug className="w-4 h-4" />
+                  <span>Detailed Findings</span>
+                  {results.length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                      {results.length}
+                    </span>
+                  )}
+                </div>
+              </button>
+              <button
+                onClick={() => setViewMode('enterprise')}
+                className={`px-6 py-2.5 rounded-md transition-all relative ${
+                  viewMode === 'enterprise'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <FileText className="w-4 h-4" />
+                  <span>Enterprise Report</span>
+                  {scan.scan_config && (scan.scan_config.executive_summary || scan.scan_config.risk_score !== undefined) && (
+                    <span className="ml-2 px-2 py-0.5 bg-gradient-to-r from-green-400 to-blue-400 text-white rounded-full text-xs font-bold animate-pulse">
+                      FULL
+                    </span>
+                  )}
+                </div>
+              </button>
+            </div>
           </div>
+          {scan.scan_config && (scan.scan_config.executive_summary || scan.scan_config.risk_score !== undefined) && viewMode === 'details' && (
+            <div className="p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border border-purple-500/20">
+              <div className="flex items-start space-x-3">
+                <Sparkles className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="text-white font-semibold mb-1">🎯 Comprehensive Enterprise Report Available!</p>
+                  <p className="text-gray-300">
+                    Switch to "Enterprise Report" view to see AI-powered executive summary, risk assessment, 
+                    compliance mapping, and remediation roadmap with {scan.scan_config.tools_used?.length || 0} security tools analysis.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Conditional Rendering based on view mode */}
