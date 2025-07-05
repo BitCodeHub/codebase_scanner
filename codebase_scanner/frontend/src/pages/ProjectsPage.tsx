@@ -2,17 +2,29 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { 
-  PlusIcon, 
-  FolderIcon, 
-  GitBranchIcon,
-  CalendarIcon,
-  ShieldCheckIcon,
-  PlayIcon
+  Plus, 
+  Folder, 
+  GitBranch,
+  Calendar,
+  ShieldCheck,
+  Play,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Search,
+  Filter,
+  Grid,
+  List,
+  TrendingUp,
+  Activity,
+  BarChart3
 } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import CreateProjectModal from '../components/forms/CreateProjectModal'
-// Scan services imported dynamically to avoid dependency issues
 import { listProjects, Project } from '../services/projectService'
+import { getFullApiUrl } from '../utils/api-config'
 
 interface ProjectWithStats extends Project {
   scan_count?: number
@@ -24,12 +36,16 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [scanningProject, setScanningProject] = useState<string | null>(null)
-  const [debugInfo, setDebugInfo] = useState<any>(null)
-  const [showDebug, setShowDebug] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'needs-scan'>('all')
   const navigate = useNavigate()
 
   useEffect(() => {
     loadProjects()
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(loadProjects, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   const loadProjects = async () => {
@@ -38,12 +54,9 @@ export default function ProjectsPage() {
       const response = await listProjects(0, 50)
       console.log('Projects response:', response)
       
-      // For now, we'll fetch scan counts separately
-      // In a production app, this would be included in the API response
       const projectsWithStats = await Promise.all(
         response.projects.map(async (project) => {
           try {
-            // Convert project.id to number for Supabase query since projects table uses BIGSERIAL
             const { data: scans, error: scanError } = await supabase
               .from('scans')
               .select('id, status, created_at, total_issues')
@@ -74,8 +87,6 @@ export default function ProjectsPage() {
       setProjects(projectsWithStats)
     } catch (error) {
       console.error('Error loading projects:', error)
-      setDebugInfo({ loadProjectsError: error })
-      setShowDebug(true)
     } finally {
       setLoading(false)
     }
@@ -83,7 +94,6 @@ export default function ProjectsPage() {
 
   const handleProjectCreated = async () => {
     setShowCreateModal(false)
-    // Add a small delay to ensure database write is complete
     setTimeout(() => {
       console.log('Refreshing projects after creation...')
       loadProjects()
@@ -93,22 +103,15 @@ export default function ProjectsPage() {
   const handleScan = async (projectId: string) => {
     try {
       setScanningProject(projectId)
-      console.log('Starting real security scan for project:', projectId)
-      
-      // Find the project to check if it has a repository URL
       const project = projects.find(p => p.id === projectId)
       if (!project) throw new Error('Project not found')
 
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No user found')
 
-      console.log('Starting real scan for project ID:', projectId, 'User ID:', user.id)
-
-      // Use simplified repository scanning endpoint
-      const { getFullApiUrl } = await import('../utils/api-config')
       const repositoryUrl = project.repository_url || 'https://github.com/OWASP/NodeGoat'
       
-      console.log('Starting repository scan for:', repositoryUrl)
+      console.log('Starting scan for:', repositoryUrl)
       
       const response = await fetch(getFullApiUrl('/api/scans/quick-production'), {
         method: 'POST',
@@ -124,296 +127,481 @@ export default function ProjectsPage() {
         })
       })
 
+      const responseText = await response.text()
+      console.log('Response status:', response.status)
+      console.log('Response text:', responseText)
+
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        throw new Error(`HTTP ${response.status}: ${responseText}`)
       }
 
-      const scanResult = await response.json()
+      let scanResult
+      try {
+        scanResult = JSON.parse(responseText)
+      } catch (e) {
+        throw new Error(`Invalid response: ${responseText}`)
+      }
       
       if (scanResult.error) {
         throw new Error(scanResult.error)
       }
 
-      console.log('Real scan initiated:', scanResult)
-
-      // Real scanning is now handled by the backend automatically
-      console.log('Backend will process the security scan using 15 production-ready tools')
+      console.log('Scan initiated:', scanResult)
       
-      // Refresh project list to show scan in progress
+      // Show success message
+      const successDiv = document.createElement('div')
+      successDiv.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-slide-up'
+      successDiv.innerHTML = `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span>Security scan started successfully!</span>
+      `
+      document.body.appendChild(successDiv)
+      setTimeout(() => successDiv.remove(), 3000)
+
+      // Refresh projects after a delay
       setTimeout(() => {
         loadProjects()
-      }, 1000)
+      }, 2000)
 
-      // Navigate to the scan results page
-      navigate(`/scans/${scanResult.id}/results`)
+      // Navigate to scan results if we have an ID
+      if (scanResult.id) {
+        setTimeout(() => {
+          navigate(`/scans/${scanResult.id}/results`)
+        }, 1500)
+      }
     } catch (error) {
       console.error('Error starting scan:', error)
-      alert(`Failed to start scan: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      
+      // Show error message
+      const errorDiv = document.createElement('div')
+      errorDiv.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-slide-up'
+      errorDiv.innerHTML = `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        <span>${error instanceof Error ? error.message : 'Failed to start scan'}</span>
+      `
+      document.body.appendChild(errorDiv)
+      setTimeout(() => errorDiv.remove(), 5000)
     } finally {
       setScanningProject(null)
     }
   }
 
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         project.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         project.repository_url?.toLowerCase().includes(searchQuery.toLowerCase())
+    
+    const matchesFilter = filterStatus === 'all' ||
+                         (filterStatus === 'active' && project.last_scan) ||
+                         (filterStatus === 'needs-scan' && !project.last_scan)
+    
+    return matchesSearch && matchesFilter
+  })
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle2 className="h-5 w-5 text-green-500" />
+      case 'running':
+        return <Clock className="h-5 w-5 text-blue-500 animate-pulse" />
+      case 'failed':
+        return <XCircle className="h-5 w-5 text-red-500" />
+      default:
+        return <AlertCircle className="h-5 w-5 text-gray-400" />
+    }
+  }
+
+  const getSecurityScore = (project: ProjectWithStats) => {
+    if (!project.last_scan) return null
+    const issues = project.last_scan.total_issues || 0
+    if (issues === 0) return { score: 'A+', color: 'text-green-600', bg: 'bg-green-50' }
+    if (issues <= 5) return { score: 'A', color: 'text-green-600', bg: 'bg-green-50' }
+    if (issues <= 10) return { score: 'B', color: 'text-blue-600', bg: 'bg-blue-50' }
+    if (issues <= 20) return { score: 'C', color: 'text-yellow-600', bg: 'bg-yellow-50' }
+    if (issues <= 30) return { score: 'D', color: 'text-orange-600', bg: 'bg-orange-50' }
+    return { score: 'F', color: 'text-red-600', bg: 'bg-red-50' }
+  }
+
   if (loading) {
     return (
-      <div className="p-6">
-        <LoadingSpinner size="lg" className="h-64" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-600">Loading your security projects...</p>
+        </div>
       </div>
     )
   }
 
-  const testScannerTools = async () => {
-    try {
-      const { getFullApiUrl } = await import('../utils/api-config')
-      
-      // Test scanner tools availability
-      const toolsResponse = await fetch(getFullApiUrl('/api/test/scanner-tools'))
-      const toolsResult = await toolsResponse.json()
-      
-      setDebugInfo({
-        timestamp: new Date().toISOString(),
-        scannerToolsStatus: toolsResult,
-        message: toolsResult.status === 'healthy' 
-          ? '✅ All scanning tools are ready!' 
-          : '⚠️ Some scanning tools need installation'
-      })
-      setShowDebug(true)
-    } catch (error) {
-      setDebugInfo({ 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        message: '❌ Failed to check scanner tools'
-      })
-      setShowDebug(true)
-    }
-  }
-
-  const testDirectCreate = async () => {
-    try {
-      const session = await supabase.auth.getSession()
-      const user = await supabase.auth.getUser()
-      const token = session.data.session?.access_token
-      const userId = user.data.user?.id
-
-      const debugData: any = {
-        timestamp: new Date().toISOString(),
-        hasToken: !!token,
-        hasUserId: !!userId,
-        userId: userId,
-        tokenPreview: token ? token.substring(0, 50) + '...' : 'No token',
-      }
-
-      // Test the direct endpoint
-      if (userId) {
-        const { getFullApiUrl } = await import('../utils/api-config')
-        
-        // Test project creation
-        const createResponse = await fetch(getFullApiUrl('/api/test/create-project'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            user_id: userId,
-            name: 'Debug Test ' + new Date().toISOString(),
-            description: 'Testing direct creation'
-          })
-        })
-
-        const createResult = await createResponse.json()
-        debugData.directCreateResult = createResult
-        debugData.directCreateStatus = createResponse.status
-        
-        // Test project listing
-        const listResponse = await fetch(getFullApiUrl('/api/test/list-projects'))
-        const listResult = await listResponse.json()
-        debugData.directListResult = listResult
-        debugData.directListStatus = listResponse.status
-        
-        // Test the actual projects API with authentication
-        try {
-          const projectsResponse = await fetch(getFullApiUrl('/api/projects/'), {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
-          const projectsResult = await projectsResponse.json()
-          debugData.projectsApiResult = projectsResult
-          debugData.projectsApiStatus = projectsResponse.status
-        } catch (err) {
-          debugData.projectsApiError = err instanceof Error ? err.message : 'Unknown error'
-        }
-      }
-
-      setDebugInfo(debugData)
-      setShowDebug(true)
-    } catch (error) {
-      setDebugInfo({ error: error instanceof Error ? error.message : 'Unknown error' })
-      setShowDebug(true)
-    }
-  }
-
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-          <p className="text-gray-600 mt-2">Manage your security scanning projects</p>
-        </div>
-        <div className="flex space-x-2">
-          <button
-            onClick={testScannerTools}
-            className="btn-secondary flex items-center"
-          >
-            🔧 Scanner Tools
-          </button>
-          <button
-            onClick={testDirectCreate}
-            className="btn-secondary flex items-center"
-          >
-            Debug
-          </button>
-          <button
-            onClick={() => {
-              console.log('Manual refresh triggered')
-              loadProjects()
-            }}
-            className="btn-secondary flex items-center"
-          >
-            Refresh
-          </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn-primary flex items-center"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            New Project
-          </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Modern Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Security Dashboard</h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  Monitor and scan your repositories for security vulnerabilities
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                New Project
+              </button>
+            </div>
+
+            {/* Stats Overview */}
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Folder className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Total Projects</p>
+                    <p className="text-2xl font-bold text-gray-900">{projects.length}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <ShieldCheck className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Total Scans</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {projects.reduce((sum, p) => sum + (p.scan_count || 0), 0)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <Activity className="h-6 w-6 text-yellow-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Active Scans</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {projects.filter(p => p.last_scan?.status === 'running').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <AlertCircle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Needs Attention</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {projects.filter(p => !p.last_scan || p.last_scan.status === 'failed').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Debug Info */}
-      {showDebug && debugInfo && (
-        <div className="mb-6 p-4 bg-gray-100 rounded-lg">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="font-semibold">Debug Information</h3>
-            <button onClick={() => setShowDebug(false)} className="text-gray-500 hover:text-gray-700">×</button>
+      {/* Search and Filters */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1 max-w-lg">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search projects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
           </div>
-          <pre className="text-xs overflow-auto max-h-96">
-            {JSON.stringify(debugInfo, null, 2)}
-          </pre>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className="h-5 w-5 text-gray-400" />
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as any)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">All Projects</option>
+                <option value="active">Active Projects</option>
+                <option value="needs-scan">Needs Scan</option>
+              </select>
+            </div>
+            
+            <div className="flex items-center border border-gray-300 rounded-lg">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-500'}`}
+              >
+                <Grid className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 ${viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-500'}`}
+              >
+                <List className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <button
+              onClick={loadProjects}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </button>
+          </div>
         </div>
-      )}
 
-      {/* Projects Grid */}
-      {projects.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
-            <div key={project.id} className="card p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <FolderIcon className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
-                    {project.description && (
-                      <p className="text-sm text-gray-600 mt-1">{project.description}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Project Stats */}
-              <div className="space-y-3 mb-4">
-                {project.repository_url && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <GitBranchIcon className="h-4 w-4 mr-2" />
-                    <span className="truncate">{project.repository_url}</span>
-                  </div>
-                )}
+        {/* Projects Display */}
+        {filteredProjects.length > 0 ? (
+          viewMode === 'grid' ? (
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProjects.map((project) => {
+                const score = getSecurityScore(project)
+                const isScanning = scanningProject === project.id
                 
-                <div className="flex items-center text-sm text-gray-600">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  <span>Created {new Date(project.created_at).toLocaleDateString()}</span>
-                </div>
+                return (
+                  <div key={project.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200">
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">{project.name}</h3>
+                          {project.description && (
+                            <p className="text-sm text-gray-600 line-clamp-2">{project.description}</p>
+                          )}
+                        </div>
+                        {score && (
+                          <div className={`ml-4 px-3 py-1 rounded-full ${score.bg}`}>
+                            <span className={`text-lg font-bold ${score.color}`}>{score.score}</span>
+                          </div>
+                        )}
+                      </div>
 
-                <div className="flex items-center text-sm text-gray-600">
-                  <ShieldCheckIcon className="h-4 w-4 mr-2" />
-                  <span>{project.scan_count} scans</span>
-                </div>
-              </div>
+                      {project.repository_url && (
+                        <div className="flex items-center text-sm text-gray-500 mb-3">
+                          <GitBranch className="h-4 w-4 mr-2" />
+                          <span className="truncate">{project.repository_url}</span>
+                        </div>
+                      )}
 
-              {/* Last Scan Info */}
-              {project.last_scan && (
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Last Scan</span>
-                    <span className={`badge ${
-                      project.last_scan.status === 'completed' ? 'badge-low' :
-                      project.last_scan.status === 'running' ? 'badge-medium' :
-                      project.last_scan.status === 'failed' ? 'badge-critical' : 'badge-info'
-                    }`}>
-                      {project.last_scan.status}
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {new Date(project.last_scan.created_at).toLocaleDateString()}
-                  </div>
-                  {project.last_scan.total_issues > 0 && (
-                    <div className="text-xs text-red-600 mt-1">
-                      {project.last_scan.total_issues} issues found
+                      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          <span>{new Date(project.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <BarChart3 className="h-4 w-4 mr-1" />
+                          <span>{project.scan_count} scans</span>
+                        </div>
+                      </div>
+
+                      {project.last_scan && (
+                        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-700">Last Scan</span>
+                            {getStatusIcon(project.last_scan.status)}
+                          </div>
+                          <div className="mt-1 text-xs text-gray-500">
+                            {new Date(project.last_scan.created_at).toLocaleString()}
+                          </div>
+                          {project.last_scan.total_issues > 0 && (
+                            <div className="mt-2 flex items-center text-sm">
+                              <AlertCircle className="h-4 w-4 text-orange-500 mr-1" />
+                              <span className="text-orange-700 font-medium">
+                                {project.last_scan.total_issues} issues found
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        <Link
+                          to={`/projects/${project.id}`}
+                          className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          View Details
+                        </Link>
+                        <button 
+                          className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          onClick={() => handleScan(project.id)}
+                          disabled={isScanning}
+                        >
+                          {isScanning ? (
+                            <>
+                              <LoadingSpinner size="sm" className="mr-2" />
+                              Scanning...
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-4 w-4 mr-2" />
+                              Scan Now
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex space-x-2">
-                <Link
-                  to={`/projects/${project.id}`}
-                  className="btn-primary flex-1 text-center"
-                >
-                  View Details
-                </Link>
-                <button 
-                  className="btn-secondary flex items-center justify-center"
-                  onClick={() => handleScan(project.id)}
-                  disabled={scanningProject === project.id}
-                >
-                  {scanningProject === project.id ? (
-                    <LoadingSpinner size="sm" />
-                  ) : (
-                    <>
-                      <PlayIcon className="h-4 w-4 mr-1" />
-                      Scan Now
-                    </>
-                  )}
-                </button>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="mt-6 bg-white shadow-sm rounded-lg border border-gray-200">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Project
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Repository
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Score
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Scans
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredProjects.map((project) => {
+                      const score = getSecurityScore(project)
+                      const isScanning = scanningProject === project.id
+                      
+                      return (
+                        <tr key={project.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{project.name}</div>
+                              {project.description && (
+                                <div className="text-sm text-gray-500">{project.description}</div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {project.repository_url ? (
+                              <div className="flex items-center text-sm text-gray-500">
+                                <GitBranch className="h-4 w-4 mr-2" />
+                                <span className="truncate max-w-xs">{project.repository_url}</span>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-400">No repository</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {project.last_scan ? (
+                              <div className="flex items-center">
+                                {getStatusIcon(project.last_scan.status)}
+                                <span className="ml-2 text-sm text-gray-600">
+                                  {project.last_scan.status}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-400">Never scanned</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {score ? (
+                              <div className={`inline-flex px-3 py-1 rounded-full ${score.bg}`}>
+                                <span className={`text-sm font-bold ${score.color}`}>{score.score}</span>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {project.scan_count}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex items-center gap-2">
+                              <Link
+                                to={`/projects/${project.id}`}
+                                className="text-blue-600 hover:text-blue-900"
+                              >
+                                View
+                              </Link>
+                              <button 
+                                className="inline-flex items-center text-blue-600 hover:text-blue-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={() => handleScan(project.id)}
+                                disabled={isScanning}
+                              >
+                                {isScanning ? (
+                                  <>
+                                    <LoadingSpinner size="sm" className="mr-1" />
+                                    Scanning
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="h-4 w-4 mr-1" />
+                                    Scan
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        /* Empty State */
-        <div className="text-center py-12">
-          <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-            <FolderIcon className="h-8 w-8 text-gray-400" />
+          )
+        ) : (
+          /* Empty State */
+          <div className="mt-12 text-center">
+            <div className="mx-auto h-24 w-24 bg-gray-100 rounded-full flex items-center justify-center">
+              <Folder className="h-12 w-12 text-gray-400" />
+            </div>
+            <h3 className="mt-6 text-lg font-medium text-gray-900">No projects found</h3>
+            <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
+              {searchQuery || filterStatus !== 'all' 
+                ? 'Try adjusting your search or filter criteria'
+                : 'Get started by creating your first security scanning project'
+              }
+            </p>
+            {!searchQuery && filterStatus === 'all' && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="mt-6 inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Create Your First Project
+              </button>
+            )}
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
-          <p className="text-gray-600 mb-6">
-            Get started by creating your first security scanning project
-          </p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn-primary"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Create Your First Project
-          </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Create Project Modal */}
       {showCreateModal && (
@@ -422,6 +610,29 @@ export default function ProjectsPage() {
           onSuccess={handleProjectCreated}
         />
       )}
+      
+      {/* Add animations */}
+      <style>{`
+        @keyframes slide-up {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out;
+        }
+        .line-clamp-2 {
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        }
+      `}</style>
     </div>
   )
 }
