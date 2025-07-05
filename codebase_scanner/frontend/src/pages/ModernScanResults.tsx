@@ -133,7 +133,7 @@ export default function ModernScanResults() {
       } else {
         console.log('Loaded scan results:', resultsData)
         // Sort results by severity on client side
-        const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 }
+        const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
         const sortedResults = (resultsData || []).sort((a, b) => {
           const aSeverity = severityOrder[a.severity] ?? 4
           const bSeverity = severityOrder[b.severity] ?? 4
