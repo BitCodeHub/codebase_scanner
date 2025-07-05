@@ -1417,11 +1417,38 @@ async def quick_production_scan(request: dict):
         print(f"Quick scan error: {e}")
         return {"error": f"Quick scan failed: {str(e)}"}
 
-# TODO: Add these routes when implemented
-# from app.api.auth import router as auth_router
-# from app.api.projects import router as projects_router
-# app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
-# app.include_router(projects_router, prefix="/api/projects", tags=["projects"])
+# Import project routes
+try:
+    from src.api.projects import router as projects_router
+    app.include_router(projects_router, prefix="/api/projects", tags=["projects"])
+    print("Projects router loaded successfully")
+except ImportError as e:
+    print(f"Warning: Could not load projects router: {e}")
+    # Create minimal projects endpoints for now
+    @app.post("/api/projects/")
+    async def create_project(project_data: dict):
+        """Temporary project creation endpoint"""
+        import uuid
+        from datetime import datetime
+        return {
+            "id": str(uuid.uuid4())[:8],
+            "name": project_data.get("name", "Test Project"),
+            "description": project_data.get("description"),
+            "repository_url": project_data.get("repository_url"),
+            "created_at": datetime.utcnow().isoformat() + "Z",
+            "updated_at": datetime.utcnow().isoformat() + "Z",
+            "active": True
+        }
+    
+    @app.get("/api/projects/")
+    async def list_projects(skip: int = 0, limit: int = 20):
+        """Temporary project listing endpoint"""
+        return {
+            "projects": [],
+            "total": 0,
+            "skip": skip,
+            "limit": limit
+        }
 
 if __name__ == "__main__":
     import uvicorn
