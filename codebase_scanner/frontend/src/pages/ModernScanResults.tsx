@@ -343,28 +343,6 @@ export default function ModernScanResults() {
       </div>
     )
   }
-            This might happen if the scan is still being processed or if the link is incorrect.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button
-              onClick={handleRefresh}
-              className="inline-flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span>Try Again</span>
-            </button>
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center justify-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Dashboard</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   const statusConfig = getStatusConfig(scan.status)
   const StatusIcon = statusConfig.icon
