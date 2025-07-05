@@ -933,12 +933,7 @@ try:
 except ImportError as e:
     print(f"WebSocket module not found: {e}")
 
-try:
-    from src.api.projects import router as projects_router
-    app.include_router(projects_router, prefix="/api", tags=["Projects"])
-    print("Project routes loaded successfully")
-except ImportError as e:
-    print(f"Project module not found: {e}")
+# Projects router is loaded later in the file with proper prefix
 
 try:
     from src.api.export import router as export_router
@@ -1420,35 +1415,141 @@ async def quick_production_scan(request: dict):
 # Import project routes
 try:
     from src.api.projects import router as projects_router
-    app.include_router(projects_router, prefix="/api/projects", tags=["projects"])
+    app.include_router(projects_router, prefix="/api", tags=["projects"])
     print("Projects router loaded successfully")
 except ImportError as e:
-    print(f"Warning: Could not load projects router: {e}")
-    # Create minimal projects endpoints for now
+    print(f"Warning: Could not load projects router due to import error: {e}")
+    print("Creating database-connected fallback endpoints...")
+    
+    # Create database-connected fallback endpoints
     @app.post("/api/projects/")
     async def create_project(project_data: dict):
-        """Temporary project creation endpoint"""
-        import uuid
-        from datetime import datetime
-        return {
-            "id": str(uuid.uuid4())[:8],
-            "name": project_data.get("name", "Test Project"),
-            "description": project_data.get("description"),
-            "repository_url": project_data.get("repository_url"),
-            "created_at": datetime.utcnow().isoformat() + "Z",
-            "updated_at": datetime.utcnow().isoformat() + "Z",
-            "active": True
-        }
+        """Database-connected project creation endpoint"""
+        try:
+            from datetime import datetime
+            import os
+            from supabase import create_client
+            import uuid
+            
+            # Get Supabase credentials
+            url = os.getenv("SUPABASE_URL")
+            key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
+            
+            if not url or not key:
+                # If no database, return a mock project
+                return {
+                    "id": str(uuid.uuid4())[:8],
+                    "name": project_data.get("name", "Test Project"),
+                    "description": project_data.get("description"),
+                    "repository_url": project_data.get("repository_url"),
+                    "created_at": datetime.utcnow().isoformat() + "Z",
+                    "updated_at": datetime.utcnow().isoformat() + "Z",
+                    "active": True,
+                    "warning": "No database configured - this is a temporary project"
+                }
+            
+            # Create Supabase client
+            supabase = create_client(url, key)
+            
+            # Get user ID from the request (would normally come from auth)
+            user_id = project_data.get("user_id")
+            if not user_id:
+                # Try to get from session or use a default
+                user_id = "00000000-0000-0000-0000-000000000000"  # Default user ID
+            
+            # Create project in database
+            db_data = {
+                "owner_id": user_id,
+                "name": project_data.get("name", f"Project {datetime.now()}"),
+                "description": project_data.get("description"),
+                "github_repo_url": project_data.get("repository_url"),
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat()
+            }
+            
+            result = supabase.table("projects").insert(db_data).execute()
+            
+            if result.data:
+                project = result.data[0]
+                return {
+                    "id": str(project["id"]),
+                    "name": project["name"],
+                    "description": project.get("description"),
+                    "repository_url": project.get("github_repo_url"),
+                    "created_at": project["created_at"],
+                    "updated_at": project["updated_at"],
+                    "active": True
+                }
+            else:
+                raise Exception("Failed to create project in database")
+                
+        except Exception as e:
+            print(f"Error creating project: {e}")
+            # Return error response
+            from fastapi import HTTPException
+            raise HTTPException(status_code=500, detail=f"Failed to create project: {str(e)}")
     
     @app.get("/api/projects/")
     async def list_projects(skip: int = 0, limit: int = 20):
-        """Temporary project listing endpoint"""
-        return {
-            "projects": [],
-            "total": 0,
-            "skip": skip,
-            "limit": limit
-        }
+        """Database-connected project listing endpoint"""
+        try:
+            import os
+            from supabase import create_client
+            
+            # Get Supabase credentials
+            url = os.getenv("SUPABASE_URL")
+            key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
+            
+            if not url or not key:
+                return {
+                    "projects": [],
+                    "total": 0,
+                    "skip": skip,
+                    "limit": limit,
+                    "warning": "No database configured"
+                }
+            
+            # Create Supabase client
+            supabase = create_client(url, key)
+            
+            # Get all projects (in production, would filter by user)
+            result = supabase.table("projects").select("*").range(skip, skip + limit - 1).execute()
+            
+            # Get total count
+            count_result = supabase.table("projects").select("id", count="exact").execute()
+            total = count_result.count if count_result.count is not None else 0
+            
+            # Transform projects
+            projects = []
+            for p in result.data:
+                projects.append({
+                    "id": str(p["id"]),
+                    "name": p["name"],
+                    "description": p.get("description"),
+                    "repository_url": p.get("github_repo_url"),
+                    "created_at": p["created_at"],
+                    "updated_at": p["updated_at"],
+                    "active": p.get("is_active", True)
+                })
+            
+            return {
+                "projects": projects,
+                "total": total,
+                "skip": skip,
+                "limit": limit
+            }
+            
+        except Exception as e:
+            print(f"Error listing projects: {e}")
+            return {
+                "projects": [],
+                "total": 0,
+                "skip": skip,
+                "limit": limit,
+                "error": str(e)
+            }
+except Exception as e:
+    print(f"Error setting up project routes: {e}")
 
 if __name__ == "__main__":
     import uvicorn
