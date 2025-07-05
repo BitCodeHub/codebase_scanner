@@ -26,9 +26,8 @@ export function getApiUrl(): string {
   // If we're in production (on Render), use the production URL
   else if (window.location.hostname.includes('onrender.com') || 
            window.location.hostname !== 'localhost') {
-    // Use the Docker backend service URL
-    // If you're using the Python service instead, change this to match that URL
-    selectedUrl = 'https://codebase-scanner-backend.onrender.com';
+    // Use the Docker backend service URL (confirmed working)
+    selectedUrl = 'https://codebase-scanner-backend-docker.onrender.com';
     source = 'production default';
   }
   // Development fallback

@@ -68,6 +68,17 @@ export default function TestBackend() {
         <p className="text-sm text-gray-600">Current API URL: <code className="bg-gray-100 px-2 py-1 rounded">{getApiUrl()}</code></p>
       </div>
       
+      {results && results.tests && results.tests[0] && results.tests[0].ok && (
+        <div className="mb-4 p-4 bg-green-100 border border-green-400 rounded">
+          <h3 className="font-semibold text-green-800 flex items-center">
+            ✅ Backend Connection Successful!
+          </h3>
+          <p className="text-sm text-green-700 mt-1">
+            The backend at {results.apiUrl} is responding correctly.
+          </p>
+        </div>
+      )}
+      
       <button
         onClick={testBackend}
         disabled={testing}

@@ -51,7 +51,7 @@ services:
       - key: VITE_SUPABASE_ANON_KEY
         sync: true  # Safe to expose - anon key is meant for frontend use
       - key: VITE_API_URL
-        value: "https://codebase-scanner-backend.onrender.com"
+        value: "https://codebase-scanner-backend-docker.onrender.com"
     headers:
       - path: /*
         name: X-Frame-Options
