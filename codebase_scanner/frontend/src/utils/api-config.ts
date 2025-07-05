@@ -10,25 +10,35 @@ export function getApiUrl(): string {
   // 3. Check if we're on Render (production)
   // 4. Fallback to production URL
   
+  let selectedUrl = '';
+  let source = '';
+  
   // If runtime config has a valid non-localhost URL, use it
   if (runtimeConfig.apiUrl && !runtimeConfig.apiUrl.includes('localhost')) {
-    return runtimeConfig.apiUrl
+    selectedUrl = runtimeConfig.apiUrl;
+    source = 'runtime config';
   }
-  
   // Check Vite environment variable
-  const viteApiUrl = import.meta.env.VITE_API_URL
-  if (viteApiUrl && !viteApiUrl.includes('localhost')) {
-    return viteApiUrl
+  else if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')) {
+    selectedUrl = import.meta.env.VITE_API_URL;
+    source = 'VITE_API_URL env';
   }
-  
   // If we're in production (on Render), use the production URL
-  if (window.location.hostname.includes('onrender.com') || 
-      window.location.hostname !== 'localhost') {
-    return 'https://codebase-scanner-backend.onrender.com'
+  else if (window.location.hostname.includes('onrender.com') || 
+           window.location.hostname !== 'localhost') {
+    // Use the Docker backend service URL
+    // If you're using the Python service instead, change this to match that URL
+    selectedUrl = 'https://codebase-scanner-backend.onrender.com';
+    source = 'production default';
+  }
+  // Development fallback
+  else {
+    selectedUrl = 'http://localhost:8000';
+    source = 'development fallback';
   }
   
-  // Development fallback
-  return 'http://localhost:8000'
+  console.log(`[API Config] Using backend URL: ${selectedUrl} (source: ${source})`);
+  return selectedUrl;
 }
 
 export function getFullApiUrl(endpoint: string): string {
