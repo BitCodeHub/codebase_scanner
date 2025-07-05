@@ -1,0 +1,637 @@
+import { useState, useEffect } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { db } from '../lib/supabase-proxy'
+import {
+  Shield,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Info,
+  Code2,
+  FileCode,
+  GitBranch,
+  Clock,
+  ChevronRight,
+  ChevronDown,
+  Bug,
+  Lock,
+  Eye,
+  Copy,
+  Download,
+  RefreshCw,
+  ArrowLeft,
+  Sparkles,
+  TrendingUp,
+  Activity,
+  BarChart3,
+  Loader2,
+  ExternalLink,
+  Terminal,
+  Zap
+} from 'lucide-react'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
+import Prism from 'prismjs'
+import 'prismjs/themes/prism-tomorrow.css'
+import 'prismjs/components/prism-javascript'
+import 'prismjs/components/prism-typescript'
+import 'prismjs/components/prism-jsx'
+import 'prismjs/components/prism-tsx'
+import 'prismjs/components/prism-python'
+import 'prismjs/components/prism-java'
+
+interface ScanResult {
+  id: string
+  severity: string
+  title: string
+  description?: string
+  file_path: string
+  line_number?: number
+  code_snippet?: string
+  rule_id?: string
+  owasp_category?: string
+  fix_recommendation?: string
+  cvss_score?: number
+  confidence?: string
+  vulnerability_type?: string
+}
+
+interface Scan {
+  id: string
+  status: string
+  created_at: string
+  completed_at?: string
+  total_issues: number
+  critical_issues: number
+  high_issues: number
+  medium_issues: number
+  low_issues: number
+  ai_insights?: any
+  project?: {
+    name: string
+    repository_url?: string
+  }
+}
+
+export default function ModernScanResults() {
+  const { id } = useParams<{ id: string }>()
+  const [scan, setScan] = useState<Scan | null>(null)
+  const [results, setResults] = useState<ScanResult[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedSeverity, setSelectedSeverity] = useState<string>('all')
+  const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
+
+  useEffect(() => {
+    if (id) {
+      loadScanData()
+    }
+  }, [id])
+
+  useEffect(() => {
+    // Syntax highlighting for code snippets
+    Prism.highlightAll()
+  }, [results])
+
+  const loadScanData = async () => {
+    if (!id) return
+
+    try {
+      setLoading(true)
+      
+      // Load scan details
+      const { data: scanData, error: scanError } = await db.scans.get(parseInt(id))
+      
+      if (scanError || !scanData) {
+        console.error('Error loading scan:', scanError)
+        return
+      }
+
+      // Load project details
+      if (scanData.project_id) {
+        const { data: projectData } = await db.projects.get(scanData.project_id)
+        if (projectData) {
+          scanData.project = projectData
+        }
+      }
+
+      setScan(scanData as Scan)
+
+      // Load scan results
+      const supabase = await db.scans.list() // Get the client
+      const { data: resultsData, error: resultsError } = await supabase
+        .from('scan_results')
+        .select('*')
+        .eq('scan_id', id)
+        .order('severity', { ascending: false })
+
+      if (resultsError) {
+        console.error('Error loading scan results:', resultsError)
+      } else {
+        setResults(resultsData || [])
+      }
+
+      // Auto-refresh for running scans
+      if (scanData.status === 'running') {
+        const interval = setInterval(() => {
+          loadScanData()
+        }, 5000)
+        return () => clearInterval(interval)
+      }
+    } catch (error) {
+      console.error('Error in loadScanData:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await loadScanData()
+    setRefreshing(false)
+  }
+
+  const toggleResult = (resultId: string) => {
+    const newExpanded = new Set(expandedResults)
+    if (newExpanded.has(resultId)) {
+      newExpanded.delete(resultId)
+    } else {
+      newExpanded.add(resultId)
+    }
+    setExpandedResults(newExpanded)
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    showNotification('success', 'Copied to clipboard')
+  }
+
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    const notificationDiv = document.createElement('div')
+    notificationDiv.className = `fixed bottom-4 right-4 ${
+      type === 'success' ? 'bg-green-500' : 'bg-red-500'
+    } text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-slide-up z-50`
+    notificationDiv.innerHTML = `
+      ${type === 'success' 
+        ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'
+        : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>'
+      }
+      <span>${message}</span>
+    `
+    document.body.appendChild(notificationDiv)
+    setTimeout(() => notificationDiv.remove(), 3000)
+  }
+
+  const getSeverityConfig = (severity: string) => {
+    switch (severity.toLowerCase()) {
+      case 'critical':
+        return { 
+          color: 'bg-red-100 text-red-800 border-red-200', 
+          bgGradient: 'from-red-500/20 to-red-600/20',
+          icon: XCircle,
+          label: 'Critical'
+        }
+      case 'high':
+        return { 
+          color: 'bg-orange-100 text-orange-800 border-orange-200', 
+          bgGradient: 'from-orange-500/20 to-orange-600/20',
+          icon: AlertTriangle,
+          label: 'High'
+        }
+      case 'medium':
+        return { 
+          color: 'bg-yellow-100 text-yellow-800 border-yellow-200', 
+          bgGradient: 'from-yellow-500/20 to-yellow-600/20',
+          icon: AlertTriangle,
+          label: 'Medium'
+        }
+      case 'low':
+        return { 
+          color: 'bg-blue-100 text-blue-800 border-blue-200', 
+          bgGradient: 'from-blue-500/20 to-blue-600/20',
+          icon: Info,
+          label: 'Low'
+        }
+      default:
+        return { 
+          color: 'bg-gray-100 text-gray-800 border-gray-200', 
+          bgGradient: 'from-gray-500/20 to-gray-600/20',
+          icon: Info,
+          label: 'Info'
+        }
+    }
+  }
+
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return { color: 'text-green-400', icon: CheckCircle, label: 'Completed' }
+      case 'running':
+        return { color: 'text-blue-400', icon: Loader2, label: 'Running', animate: true }
+      case 'failed':
+        return { color: 'text-red-400', icon: XCircle, label: 'Failed' }
+      default:
+        return { color: 'text-gray-400', icon: Clock, label: 'Pending' }
+    }
+  }
+
+  const filteredResults = results.filter(result => {
+    const matchesSeverity = selectedSeverity === 'all' || result.severity === selectedSeverity
+    const matchesSearch = !searchQuery || 
+      result.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      result.file_path.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      result.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    
+    return matchesSeverity && matchesSearch
+  })
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 animate-pulse"></div>
+            <Shield className="w-12 h-12 text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <p className="mt-6 text-gray-300 text-lg">Loading scan results...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!scan) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold text-white mb-2">Scan not found</h2>
+          <p className="text-gray-400 mb-6">The scan you're looking for doesn't exist.</p>
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Dashboard</span>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const statusConfig = getStatusConfig(scan.status)
+  const StatusIcon = statusConfig.icon
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      {/* Animated background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-40 left-40 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
+      </div>
+
+      {/* Header */}
+      <header className="relative backdrop-blur-xl bg-gray-900/70 border-b border-gray-700/50 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-4">
+              <Link
+                to="/dashboard"
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-300" />
+              </Link>
+              <div>
+                <h1 className="text-xl font-bold text-white">Scan Results</h1>
+                {scan.project && (
+                  <p className="text-sm text-gray-400">{scan.project.name}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-5 h-5 text-gray-300 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+              
+              <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+                <Download className="w-5 h-5 text-gray-300" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Scan summary */}
+        <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-8 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-xl">
+                <Shield className="w-8 h-8 text-blue-400" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Security Scan #{scan.id}</h2>
+                <div className="flex items-center space-x-4 mt-2">
+                  <div className={`flex items-center space-x-2 ${statusConfig.color}`}>
+                    <StatusIcon className={`w-5 h-5 ${statusConfig.animate ? 'animate-spin' : ''}`} />
+                    <span className="font-medium">{statusConfig.label}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-gray-400">
+                    <Clock className="w-4 h-4" />
+                    <span className="text-sm">
+                      {new Date(scan.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {scan.project?.repository_url && (
+              <a
+                href={scan.project.repository_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-700/50 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-all"
+              >
+                <GitBranch className="w-4 h-4" />
+                <span>View Repository</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
+          </div>
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-400 text-sm">Total</span>
+                <Bug className="w-4 h-4 text-gray-500" />
+              </div>
+              <p className="text-2xl font-bold text-white">{scan.total_issues}</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-xl p-4 border border-red-500/20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-red-400 text-sm">Critical</span>
+                <XCircle className="w-4 h-4 text-red-400" />
+              </div>
+              <p className="text-2xl font-bold text-red-400">{scan.critical_issues}</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/20 rounded-xl p-4 border border-orange-500/20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-orange-400 text-sm">High</span>
+                <AlertTriangle className="w-4 h-4 text-orange-400" />
+              </div>
+              <p className="text-2xl font-bold text-orange-400">{scan.high_issues}</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-xl p-4 border border-yellow-500/20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-yellow-400 text-sm">Medium</span>
+                <AlertTriangle className="w-4 h-4 text-yellow-400" />
+              </div>
+              <p className="text-2xl font-bold text-yellow-400">{scan.medium_issues}</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl p-4 border border-blue-500/20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-blue-400 text-sm">Low</span>
+                <Info className="w-4 h-4 text-blue-400" />
+              </div>
+              <p className="text-2xl font-bold text-blue-400">{scan.low_issues}</p>
+            </div>
+          </div>
+
+          {/* AI Insights */}
+          {scan.ai_insights && (
+            <div className="mt-6 p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl border border-purple-500/20">
+              <div className="flex items-center space-x-2 mb-3">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+                <h3 className="text-lg font-semibold text-white">AI Security Insights</h3>
+              </div>
+              <p className="text-gray-300 leading-relaxed">
+                {scan.ai_insights.summary || 'AI analysis pending...'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              placeholder="Search vulnerabilities..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all"
+            />
+            <FileCode className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          </div>
+
+          <div className="flex gap-2">
+            {['all', 'critical', 'high', 'medium', 'low'].map((severity) => (
+              <button
+                key={severity}
+                onClick={() => setSelectedSeverity(severity)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  selectedSeverity === severity
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                    : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/50'
+                }`}
+              >
+                {severity.charAt(0).toUpperCase() + severity.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Results */}
+        {filteredResults.length > 0 ? (
+          <div className="space-y-4">
+            {filteredResults.map((result) => {
+              const severityConfig = getSeverityConfig(result.severity)
+              const SeverityIcon = severityConfig.icon
+              const isExpanded = expandedResults.has(result.id)
+
+              return (
+                <div
+                  key={result.id}
+                  className={`bg-gradient-to-br ${severityConfig.bgGradient} backdrop-blur-xl rounded-xl border border-gray-700/50 hover:border-gray-600/50 transition-all`}
+                >
+                  <div
+                    className="p-6 cursor-pointer"
+                    onClick={() => toggleResult(result.id)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 mr-4">
+                        <div className="flex items-start space-x-3">
+                          <div className={`p-2 rounded-lg ${severityConfig.color}`}>
+                            <SeverityIcon className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-white mb-1">
+                              {result.title}
+                            </h3>
+                            <div className="flex items-center space-x-4 text-sm text-gray-400">
+                              <div className="flex items-center space-x-1">
+                                <FileCode className="w-4 h-4" />
+                                <span className="font-mono">{result.file_path}</span>
+                                {result.line_number && (
+                                  <span>:{result.line_number}</span>
+                                )}
+                              </div>
+                              {result.rule_id && (
+                                <div className="flex items-center space-x-1">
+                                  <Terminal className="w-4 h-4" />
+                                  <span className="font-mono text-xs">{result.rule_id}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <button className="p-2 hover:bg-gray-700/50 rounded-lg transition-colors">
+                        {isExpanded ? (
+                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Quick actions */}
+                    {isExpanded && (
+                      <div className="mt-6 space-y-4">
+                        {result.description && (
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-400 mb-2">Description</h4>
+                            <p className="text-gray-300">{result.description}</p>
+                          </div>
+                        )}
+
+                        {result.code_snippet && (
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-sm font-medium text-gray-400">Code</h4>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  copyToClipboard(result.code_snippet!)
+                                }}
+                                className="p-1 hover:bg-gray-700/50 rounded transition-colors"
+                              >
+                                <Copy className="w-4 h-4 text-gray-400" />
+                              </button>
+                            </div>
+                            <pre className="bg-gray-900/50 rounded-lg p-4 overflow-x-auto">
+                              <code className="language-javascript text-sm">
+                                {result.code_snippet}
+                              </code>
+                            </pre>
+                          </div>
+                        )}
+
+                        {result.fix_recommendation && (
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-400 mb-2 flex items-center space-x-2">
+                              <Zap className="w-4 h-4" />
+                              <span>Recommended Fix</span>
+                            </h4>
+                            <p className="text-gray-300 bg-gray-900/50 rounded-lg p-4">
+                              {result.fix_recommendation}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex items-center space-x-4 pt-4 border-t border-gray-700/50">
+                          {result.owasp_category && (
+                            <span className="text-xs px-3 py-1 bg-gray-700/50 text-gray-300 rounded-full">
+                              {result.owasp_category}
+                            </span>
+                          )}
+                          {result.cvss_score && (
+                            <span className="text-xs px-3 py-1 bg-gray-700/50 text-gray-300 rounded-full">
+                              CVSS: {result.cvss_score}
+                            </span>
+                          )}
+                          {result.confidence && (
+                            <span className="text-xs px-3 py-1 bg-gray-700/50 text-gray-300 rounded-full">
+                              {result.confidence} confidence
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gray-800/50 mb-6">
+              <CheckCircle className="w-12 h-12 text-green-400" />
+            </div>
+            <h3 className="text-2xl font-semibold text-white mb-2">
+              {searchQuery || selectedSeverity !== 'all' 
+                ? 'No vulnerabilities found' 
+                : 'All clear!'
+              }
+            </h3>
+            <p className="text-gray-400 max-w-md mx-auto">
+              {searchQuery || selectedSeverity !== 'all' 
+                ? 'Try adjusting your search or filters.'
+                : 'No security vulnerabilities were detected in this scan. Your code is looking secure!'
+              }
+            </p>
+          </div>
+        )}
+      </main>
+
+      <style>{`
+        @keyframes blob {
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+        
+        @keyframes slide-up {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out;
+        }
+      `}</style>
+    </div>
+  )
+}

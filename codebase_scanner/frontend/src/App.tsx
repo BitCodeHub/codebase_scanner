@@ -7,9 +7,9 @@ import { Session } from '@supabase/supabase-js'
 import Layout from './components/layout/Layout'
 import AuthPage from './pages/AuthPage'
 import Dashboard from './pages/Dashboard'
-import ProjectsPage from './pages/ProjectsPage'
+import ModernProjectsPage from './pages/ModernProjectsPage'
 import ProjectDetail from './pages/ProjectDetail'
-import ScanResults from './pages/ScanResults'
+import ModernScanResults from './pages/ModernScanResults'
 import Activity from './pages/Activity'
 import DebugPage from './pages/DebugPage'
 import LoadingSpinner from './components/ui/LoadingSpinner'
@@ -51,10 +51,10 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<ProjectsPage />} />
-          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/dashboard" element={<ModernProjectsPage />} />
+          <Route path="/projects" element={<ModernProjectsPage />} />
           <Route path="/projects/:id" element={<ProjectDetail />} />
-          <Route path="/scans/:id/results" element={<ScanResults />} />
+          <Route path="/scans/:id/results" element={<ModernScanResults />} />
           <Route path="/activity" element={<Activity />} />
           <Route path="/debug" element={<DebugPage />} />
           <Route path="/scan-file" element={<UniversalScanPage />} />
