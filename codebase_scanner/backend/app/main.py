@@ -755,9 +755,13 @@ async def scan_comprehensive(request: dict):
             
             # Create scan record with enterprise data
             severity_dist = scan_result.get("statistics", {}).get("severity_distribution", {})
+            
+            # Debug project_id
+            print(f"Debug - project_id: {project_id}, type: {type(project_id)}")
+            
             scan_data = {
                 "user_id": user_id,
-                "project_id": int(project_id) if project_id and project_id.isdigit() else None,
+                "project_id": int(project_id) if project_id and str(project_id).isdigit() else None,
                 "scan_type": "security",
                 "status": "completed",
                 "triggered_by": "manual",
@@ -870,19 +874,27 @@ async def scan_comprehensive(request: dict):
         
         except Exception as db_error:
             print(f"⚠️ Database storage failed: {str(db_error)}")
-            # Return results even if DB storage fails
+            print(f"   Error type: {type(db_error).__name__}")
+            print(f"   Full error: {repr(db_error)}")
+            
+            # Log the scan data that failed to save
+            print(f"   Failed scan data:")
+            print(f"   - user_id: {scan_data.get('user_id')}")
+            print(f"   - project_id: {scan_data.get('project_id')}")
+            print(f"   - total_issues: {scan_data.get('total_issues')}")
+            
+            # Don't return the internal scan_id as it's not a valid database ID
+            # Instead, return an error response
             return {
-                "id": scan_result.get("scan_id", ""),
-                "project_id": project_id,
-                "status": "completed",
-                "message": "Enterprise scan completed (database storage failed)",
-                "summary": {
-                    "total_findings": scan_result.get("total_findings", 0),
-                    "risk_score": scan_result.get("risk_score", 0),
-                    "risk_level": scan_result.get("risk_level", "UNKNOWN")
-                },
-                "executive_summary": scan_result.get("executive_summary", ""),
-                "warning": f"Database error: {str(db_error)}"
+                "error": f"Failed to save scan results: {str(db_error)}",
+                "status": "error",
+                "message": "Scan completed but failed to save to database",
+                "details": {
+                    "scan_completed": True,
+                    "findings_count": scan_result.get("total_findings", 0),
+                    "error_type": type(db_error).__name__,
+                    "error_message": str(db_error)
+                }
             }
             
     except Exception as e:

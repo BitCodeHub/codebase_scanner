@@ -157,7 +157,20 @@ export default function ModernProjectsPage() {
       }
 
       const scanResult = await response.json()
-      console.log('Scan initiated:', scanResult)
+      console.log('Scan response:', scanResult)
+      
+      // Check if scan failed to save to database
+      if (scanResult.error || scanResult.status === 'error') {
+        console.error('Scan error:', scanResult)
+        showNotification('error', scanResult.message || 'Scan failed to save to database')
+        
+        // Still refresh projects as the scan might have partially saved
+        setTimeout(() => {
+          loadProjects()
+        }, 2000)
+        return
+      }
+      
       console.log('Scan ID received:', scanResult.id)
       
       // Show success notification
@@ -168,8 +181,8 @@ export default function ModernProjectsPage() {
         loadProjects()
       }, 2000)
 
-      // Navigate to scan results if we have an ID
-      if (scanResult.id) {
+      // Navigate to scan results if we have a valid numeric ID
+      if (scanResult.id && typeof scanResult.id === 'number') {
         console.log(`Navigating to scan results page: /scans/${scanResult.id}/results`)
         showNotification('success', 'Scan completed! Redirecting to results...')
         
@@ -178,6 +191,10 @@ export default function ModernProjectsPage() {
           console.log(`Actually navigating now to: /scans/${scanResult.id}/results`)
           navigate(`/scans/${scanResult.id}/results`)
         }, 3000)  // Increased to 3 seconds
+      } else if (scanResult.id) {
+        // If we got a non-numeric ID (UUID), it means the scan wasn't saved properly
+        console.error('Invalid scan ID format received:', scanResult.id)
+        showNotification('error', 'Scan completed but failed to save properly. Please try again.')
       } else {
         console.error('No scan ID received in response:', scanResult)
         showNotification('error', 'Scan started but no ID received')
