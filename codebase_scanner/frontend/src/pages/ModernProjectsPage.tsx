@@ -131,20 +131,24 @@ export default function ModernProjectsPage() {
       const { data: { user } } = await auth.getUser()
       if (!user) throw new Error('No user found')
 
+      // Get the session for authorization
+      const { data: { session } } = await auth.getSession()
+      if (!session) throw new Error('No session found')
+
       const repositoryUrl = project.repository_url || 'https://github.com/OWASP/NodeGoat'
       
-      const response = await fetch(getFullApiUrl('/api/scans/mobile-app'), {
+      const response = await fetch(getFullApiUrl('/api/scans/comprehensive'), {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
           project_id: projectId,
           repository_url: repositoryUrl,
           branch: 'main',
           scan_type: 'comprehensive',
-          user_id: user.id,
-          enable_ai_analysis: true
+          user_id: user.id
         })
       })
 

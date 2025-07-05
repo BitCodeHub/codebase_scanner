@@ -681,6 +681,125 @@ async def scan_repository_simple(request: dict):
     except Exception as e:
         return {"error": f"Failed to start repository scan: {str(e)}"}
 
+@app.post("/api/scans/comprehensive")
+async def scan_comprehensive(request: dict):
+    """Run all 15 security tools for comprehensive analysis"""
+    try:
+        from app.comprehensive_scanner import ComprehensiveSecurityScanner
+        import uuid
+        from datetime import datetime
+        
+        # Extract request data
+        project_id = request.get("project_id")
+        repository_url = request.get("repository_url")
+        branch = request.get("branch", "main")
+        user_id = request.get("user_id")
+        
+        if not project_id or not repository_url:
+            return {"error": "project_id and repository_url are required"}
+        
+        print(f"\n🔒 COMPREHENSIVE SECURITY SCAN REQUESTED 🔒")
+        print(f"Project ID: {project_id}")
+        print(f"Repository: {repository_url}")
+        print(f"Running all 15 security tools...")
+        
+        # Initialize scanner and run comprehensive scan
+        scanner = ComprehensiveSecurityScanner()
+        scan_result = scanner.scan_repository(repository_url, branch)
+        
+        if "error" in scan_result:
+            return scan_result
+        
+        # Store in database
+        try:
+            from src.database import get_supabase_client
+            supabase = get_supabase_client()
+            
+            # Create scan record
+            scan_data = {
+                "user_id": user_id,
+                "project_id": int(project_id) if project_id and project_id.isdigit() else None,
+                "scan_type": "security",
+                "status": "completed",
+                "triggered_by": "manual",
+                "branch": branch,
+                "total_issues": scan_result["total_findings"],
+                "critical_issues": scan_result["findings_by_severity"]["critical"],
+                "high_issues": scan_result["findings_by_severity"]["high"],
+                "medium_issues": scan_result["findings_by_severity"]["medium"],
+                "low_issues": scan_result["findings_by_severity"]["low"],
+                "created_at": datetime.utcnow().isoformat(),
+                "completed_at": datetime.utcnow().isoformat(),
+                "scan_config": {
+                    "tools_used": list(scanner.tools.keys()),
+                    "repository_url": repository_url,
+                    "comprehensive_scan": True
+                }
+            }
+            
+            scan_response = supabase.table("scans").insert(scan_data).execute()
+            
+            if scan_response.data and len(scan_response.data) > 0:
+                actual_scan_id = scan_response.data[0]["id"]
+                print(f"✅ Scan created with ID: {actual_scan_id}")
+                
+                # Store detailed findings
+                if scan_result["all_findings"]:
+                    scan_results_data = []
+                    for finding in scan_result["all_findings"]:
+                        result_data = {
+                            "scan_id": actual_scan_id,
+                            "analyzer": finding.get("tool", "unknown"),
+                            "rule_id": finding.get("rule_id", ""),
+                            "severity": finding.get("severity", "medium"),
+                            "title": finding.get("title", "Security Finding"),
+                            "description": finding.get("description", ""),
+                            "file_path": finding.get("file_path", ""),
+                            "line_number": finding.get("line_number", 0),
+                            "code_snippet": finding.get("code_snippet", ""),
+                            "category": "security",
+                            "vulnerability_type": "security",
+                            "confidence": "high",
+                            "fix_recommendation": "Review and fix this security issue"
+                        }
+                        scan_results_data.append(result_data)
+                    
+                    if scan_results_data:
+                        results_response = supabase.table("scan_results").insert(scan_results_data).execute()
+                        print(f"✅ Stored {len(scan_results_data)} findings in database")
+                
+                return {
+                    "id": actual_scan_id,
+                    "project_id": project_id,
+                    "status": "completed",
+                    "message": "Comprehensive security scan completed successfully",
+                    "summary": {
+                        "total_findings": scan_result["total_findings"],
+                        "critical": scan_result["findings_by_severity"]["critical"],
+                        "high": scan_result["findings_by_severity"]["high"],
+                        "medium": scan_result["findings_by_severity"]["medium"],
+                        "low": scan_result["findings_by_severity"]["low"],
+                        "tools_run": scan_result["tools_run"]
+                    },
+                    "tools_results": scan_result["detailed_results"]
+                }
+        
+        except Exception as db_error:
+            print(f"⚠️ Database storage failed: {str(db_error)}")
+            # Return results even if DB storage fails
+            return {
+                "id": scan_result["scan_id"],
+                "project_id": project_id,
+                "status": "completed",
+                "message": "Scan completed (database storage failed)",
+                "summary": scan_result["findings_by_severity"],
+                "warning": f"Database error: {str(db_error)}"
+            }
+            
+    except Exception as e:
+        print(f"❌ Comprehensive scan failed: {str(e)}")
+        return {"error": f"Comprehensive scan failed: {str(e)}"}
+
 @app.post("/api/scans/mobile-app")
 async def scan_mobile_app(request: dict):
     """Comprehensive mobile app security scanning with secrets detection and AI analysis"""
