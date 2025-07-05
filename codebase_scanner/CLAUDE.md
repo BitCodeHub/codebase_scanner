@@ -39,21 +39,26 @@
 
 ## Mobile App Security Scanning Tools
 
-### Installed and Configured Tools (10 total):
+### Installed and Configured Tools (15 total):
 
-#### Core Security Tools:
+#### Core Security Tools (10):
 - **Semgrep v1.127.1** - Static analysis with mobile-specific rules
 - **Bandit v1.8.5** - Python security linter
 - **Safety v3.5.2** - Dependency vulnerability scanner
 - **Gitleaks v8.27.2** - Git secrets scanner
-
-#### Mobile-Specific Security Tools:
 - **TruffleHog v2.2.1** - Deep secrets detection in repositories
 - **detect-secrets v1.5.0** - Advanced credential scanning
 - **Retire.js v5.2.7** - JavaScript vulnerability scanner
 - **JADX v1.5.2** - Android APK analysis and decompilation
 - **APKLeaks v2.6.3** - Android app secrets detection
 - **QARK v4.0.0** - Android security assessment
+
+#### Additional Enterprise Tools (5):
+- **ESLint Security** - JavaScript/TypeScript security linting
+- **njsscan** - Node.js security scanner
+- **Checkov** - Infrastructure as Code security scanner
+- **tfsec** - Terraform security scanner
+- **OWASP Dependency Check** - Comprehensive dependency vulnerability scanner
 
 ### Security Scanning Capabilities:
 - **Client ID and API Key Detection**: Comprehensive scanning for hardcoded credentials
@@ -64,7 +69,7 @@
 - **Production App Scanning**: Real-time security assessment of live codebases
 
 ### API Endpoints:
-- `/api/test/scanner-tools` - Test all 10 security tools availability
+- `/api/test/scanner-tools` - Test all 15 security tools availability
 - `/api/scans/mobile-app` - Comprehensive mobile app security scanning with AI analysis
 - `/api/scans/repository-simple` - General repository security scanning
 - `/api/test/ai-analysis` - Test AI security analysis with sample findings

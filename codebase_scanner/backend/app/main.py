@@ -1223,6 +1223,208 @@ async def analyze_scan_results_with_ai(request: dict):
     except Exception as e:
         return {"error": f"AI analysis failed: {str(e)}"}
 
+@app.post("/api/scans/production")
+async def production_security_scan(request: dict):
+    """Production security scan with 15 tools and comprehensive reporting"""
+    try:
+        import tempfile
+        import subprocess
+        import sys
+        import asyncio
+        import uuid
+        from pathlib import Path
+        
+        # Extract request parameters
+        project_id = request.get("project_id")
+        repository_url = request.get("repository_url", "")
+        branch = request.get("branch", "main")
+        scan_type = request.get("scan_type", "comprehensive")
+        user_id = request.get("user_id")
+        enable_ai_analysis = request.get("enable_ai_analysis", False)
+        
+        if not project_id:
+            return {"error": "project_id is required"}
+        
+        if not repository_url:
+            return {"error": "repository_url is required"}
+            
+        # Generate scan ID
+        scan_id = str(uuid.uuid4())
+        
+        print(f"=== PRODUCTION SECURITY SCAN INITIATED ===")
+        print(f"Scan ID: {scan_id}")
+        print(f"Repository: {repository_url}")
+        print(f"Branch: {branch}")
+        print(f"Total Tools: 15")
+        print(f"==========================================")
+        
+        # Clone and scan repository
+        with tempfile.TemporaryDirectory() as temp_dir:
+            print(f"Working directory: {temp_dir}")
+            
+            # Clone repository
+            repo_path = Path(temp_dir) / "repo"
+            clone_cmd = ["git", "clone", "--depth", "1", "-b", branch, repository_url, str(repo_path)]
+            
+            print("Cloning repository...")
+            clone_result = subprocess.run(clone_cmd, capture_output=True, text=True, timeout=60)
+            
+            if clone_result.returncode != 0:
+                return {"error": f"Failed to clone repository: {clone_result.stderr}"}
+                
+            print("✅ Repository cloned successfully")
+            
+            # Run production scanner
+            try:
+                # Add backend directory to Python path
+                backend_dir = Path(__file__).parent.parent
+                sys.path.insert(0, str(backend_dir))
+                
+                # Import and run scanner
+                from production_scanner import ProductionScanner
+                
+                # Create scanner instance
+                scanner = ProductionScanner(str(repo_path))
+                
+                # Run scan asynchronously
+                print("Starting production scan with 15 tools...")
+                scan_results = await scanner.scan_repository()
+                
+                # Generate comprehensive report
+                print("Generating comprehensive security report...")
+                report_path = scanner.generate_enhanced_report(scan_results)
+                
+                # Read report content
+                with open(report_path, 'r') as f:
+                    report_content = f.read()
+                
+                # Prepare response
+                response_data = {
+                    "id": scan_id,
+                    "project_id": project_id,
+                    "scan_type": "production_comprehensive",
+                    "status": "completed",
+                    "created_at": datetime.utcnow().isoformat(),
+                    "repository_url": repository_url,
+                    "branch": branch,
+                    "message": "Production security scan completed with 15 tools",
+                    "summary": {
+                        "total_security_issues": scan_results["metrics"]["total_vulnerabilities"],
+                        "critical_issues": scan_results["metrics"].get("critical_count", 0),
+                        "high_issues": scan_results["metrics"].get("high_count", 0),
+                        "tools_available": scan_results["metrics"]["total_tools_available"],
+                        "tools_installed": scan_results["metrics"]["tools_installed"],
+                        "tools_run": scan_results["metrics"]["tools_run"],
+                        "sensitive_files": scan_results["metrics"]["sensitive_files"],
+                        "api_endpoints": scan_results["metrics"]["api_endpoints"],
+                        "scan_duration": str(scan_results["metrics"]["end_time"] - scan_results["metrics"]["start_time"])
+                    },
+                    "report": {
+                        "content": report_content,
+                        "lines": len(report_content.split('\n')),
+                        "size_kb": len(report_content) // 1024
+                    },
+                    "tools_status": {
+                        tool["tool"]: tool["status"] 
+                        for tool in scan_results["tool_results"]
+                    },
+                    "vulnerabilities": scan_results.get("vulnerabilities", [])[:10],  # Top 10
+                    "security_focus": [
+                        "Comprehensive security analysis with 15 tools",
+                        "Static code analysis (Semgrep, Bandit, ESLint)",
+                        "Secret detection (Gitleaks, TruffleHog, detect-secrets)",
+                        "Dependency scanning (Safety, Retire.js, Dependency Check)",
+                        "Infrastructure security (Checkov, tfsec)",
+                        "Mobile app security (JADX, APKLeaks, QARK)",
+                        "Node.js security (njsscan)"
+                    ]
+                }
+                
+                # Add AI analysis if enabled
+                if enable_ai_analysis and scan_results["metrics"]["total_vulnerabilities"] > 0:
+                    print("🤖 Running AI analysis...")
+                    try:
+                        ai_insights = await generate_ai_security_insights(
+                            scan_results=scan_results,
+                            all_findings=scan_results.get("vulnerabilities", [])[:15],
+                            repository_url=repository_url,
+                            total_issues=scan_results["metrics"]["total_vulnerabilities"],
+                            total_secrets=0  # Extract from scan results if available
+                        )
+                        response_data["ai_insights"] = ai_insights
+                    except Exception as e:
+                        print(f"AI analysis failed: {e}")
+                        response_data["ai_insights"] = {"error": str(e)}
+                
+                print("✅ Production scan completed successfully")
+                return response_data
+                
+            except Exception as scan_error:
+                print(f"Scan error: {scan_error}")
+                import traceback
+                traceback.print_exc()
+                return {"error": f"Scan failed: {str(scan_error)}"}
+                
+    except Exception as e:
+        print(f"Production scan error: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"error": f"Production scan failed: {str(e)}"}
+
+@app.post("/api/scans/quick-production")
+async def quick_production_scan(request: dict):
+    """Quick production scan with essential tools for faster response"""
+    try:
+        import uuid
+        from datetime import datetime
+        from app.scan_service import quick_security_scan
+        
+        # Extract request parameters
+        project_id = request.get("project_id")
+        repository_url = request.get("repository_url", "")
+        branch = request.get("branch", "main")
+        user_id = request.get("user_id")
+        
+        if not project_id:
+            return {"error": "project_id is required"}
+        
+        if not repository_url:
+            return {"error": "repository_url is required"}
+            
+        # Generate scan ID
+        scan_id = str(uuid.uuid4())
+        
+        print(f"=== QUICK PRODUCTION SCAN ===")
+        print(f"Scan ID: {scan_id}")
+        print(f"Repository: {repository_url}")
+        print(f"Branch: {branch}")
+        
+        # Run quick scan
+        scan_results = await quick_security_scan(repository_url, branch)
+        
+        if "error" in scan_results:
+            return scan_results
+            
+        # Prepare response
+        return {
+            "id": scan_id,
+            "project_id": project_id,
+            "scan_type": "quick_production",
+            "status": "completed",
+            "created_at": datetime.utcnow().isoformat(),
+            "repository_url": repository_url,
+            "branch": branch,
+            "message": "Quick security scan completed",
+            "summary": scan_results["summary"],
+            "tools_status": scan_results["tools"],
+            "vulnerabilities": scan_results["vulnerabilities"],
+            "scan_time": scan_results["scan_time"]
+        }
+        
+    except Exception as e:
+        print(f"Quick scan error: {e}")
+        return {"error": f"Quick scan failed: {str(e)}"}
+
 # TODO: Add these routes when implemented
 # from app.api.auth import router as auth_router
 # from app.api.projects import router as projects_router
