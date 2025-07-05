@@ -137,7 +137,28 @@ export default function ModernProjectsPage() {
 
       const repositoryUrl = project.repository_url || 'https://github.com/OWASP/NodeGoat'
       
-      const response = await fetch(getFullApiUrl('/api/scans/comprehensive'), {
+      // Show starting notification
+      showNotification('success', 'Starting security scan... This may take a few minutes.')
+      
+      // Create abort controller for timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => {
+        controller.abort()
+        console.error('Scan request timed out after 30 seconds')
+      }, 30 * 1000) // 30 second timeout for simpler scan
+      
+      // Use the simpler scan endpoint for faster results
+      const scanUrl = getFullApiUrl('/api/scans/repository')
+      console.log('Scan URL:', scanUrl)
+      console.log('Request body:', {
+        project_id: projectId,
+        repository_url: repositoryUrl,
+        branch: 'main',
+        scan_type: 'security',
+        user_id: user.id
+      })
+      
+      const response = await fetch(scanUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -149,8 +170,12 @@ export default function ModernProjectsPage() {
           branch: 'main',
           scan_type: 'comprehensive',
           user_id: user.id
-        })
+        }),
+        signal: controller.signal
       })
+      
+      // Clear timeout if request completes
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         throw new Error(`Scan failed: ${response.statusText}`)
@@ -201,7 +226,19 @@ export default function ModernProjectsPage() {
       }
     } catch (error) {
       console.error('Error starting scan:', error)
-      showNotification('error', error instanceof Error ? error.message : 'Failed to start scan')
+      
+      let errorMessage = 'Failed to start scan'
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'Scan request timed out. The scan may still be running on the server. Please check back later.'
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'Network error: Unable to reach the scan server. Please check your connection and try again.'
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
+      showNotification('error', errorMessage)
     } finally {
       setScanningProject(null)
     }
@@ -449,8 +486,19 @@ export default function ModernProjectsPage() {
               return (
                 <div
                   key={project.id}
-                  className="group bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 hover:border-gray-600/50 transition-all hover:transform hover:scale-[1.02] hover:shadow-2xl"
+                  className="group bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 hover:border-gray-600/50 transition-all hover:transform hover:scale-[1.02] hover:shadow-2xl relative"
                 >
+                  {/* Scanning overlay */}
+                  {isScanning && (
+                    <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm rounded-2xl z-10 flex items-center justify-center">
+                      <div className="text-center">
+                        <Loader2 className="w-12 h-12 text-blue-400 animate-spin mx-auto mb-3" />
+                        <p className="text-white font-medium">Scanning repository...</p>
+                        <p className="text-gray-400 text-sm mt-1">This may take a moment</p>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="p-6">
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
