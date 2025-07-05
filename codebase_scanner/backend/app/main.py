@@ -864,14 +864,13 @@ async def scan_mobile_app(request: dict):
             from src.database import get_supabase_client
             supabase = get_supabase_client()
             
-            # Create scan record
+            # Create scan record (don't set ID - let database auto-generate it)
             scan_data = {
-                "id": scan_id,
                 "user_id": user_id,
                 "project_id": int(project_id) if project_id and project_id.isdigit() else None,
-                "scan_type": "mobile_security",
+                "scan_type": "security",  # Use standard scan_type enum value
                 "status": "completed",
-                "repository_url": repository_url,
+                "triggered_by": "manual",
                 "branch": branch,
                 "total_issues": total_issues,
                 "critical_issues": sum(1 for f in all_findings if f.get('severity', '').upper() == 'ERROR' or f.get('severity', '').upper() == 'CRITICAL'),
@@ -880,71 +879,80 @@ async def scan_mobile_app(request: dict):
                 "low_issues": sum(1 for f in all_findings if f.get('severity', '').upper() == 'INFO' or f.get('severity', '').upper() == 'LOW'),
                 "created_at": datetime.utcnow().isoformat(),
                 "completed_at": datetime.utcnow().isoformat(),
-                "metadata": {
+                "scan_config": {
                     "tools_used": ["semgrep", "gitleaks", "detect-secrets"],
                     "ai_analysis_enabled": enable_ai_analysis,
-                    "scan_duration": "1-3 minutes"
+                    "scan_duration": "1-3 minutes",
+                    "repository_url": repository_url
                 }
             }
             
             scan_response = supabase.table("scans").insert(scan_data).execute()
-            print(f"✅ Scan {scan_id} created in database")
             
-            # Store scan results
-            if all_findings:
-                scan_results_data = []
-                for idx, finding in enumerate(all_findings[:100]):  # Limit to first 100 findings
-                    severity = finding.get('severity', 'MEDIUM').upper()
-                    if severity == 'ERROR':
-                        severity = 'CRITICAL'
-                    elif severity == 'WARNING':
-                        severity = 'HIGH'
-                    elif severity == 'INFO':
-                        severity = 'LOW'
-                    
-                    # Extract line number safely
-                    line_number = 0
-                    if 'start' in finding and isinstance(finding['start'], dict):
-                        line_number = finding['start'].get('line', 0)
-                    
-                    # Extract code snippet safely
-                    code_snippet = ''
-                    if 'extra' in finding and isinstance(finding['extra'], dict):
-                        metavars = finding['extra'].get('metavars', {})
-                        if isinstance(metavars, dict):
-                            for key, value in metavars.items():
-                                if isinstance(value, dict) and 'abstract_content' in value:
-                                    code_snippet = str(value['abstract_content'])
-                                    break
-                    
-                    result_data = {
-                        "scan_id": scan_id,
-                        "tool": finding.get('tool', 'semgrep'),
-                        "rule_id": finding.get('check_id', f"finding-{idx}"),
-                        "severity": severity,
-                        "title": finding.get('message', 'Security Finding'),
-                        "description": finding.get('extra', {}).get('message', finding.get('message', '')) if isinstance(finding.get('extra'), dict) else finding.get('message', ''),
-                        "file_path": finding.get('path', 'unknown'),
-                        "line_number": line_number,
-                        "code_snippet": code_snippet,
-                        "category": "security",
-                        "owasp_category": finding.get('owasp_category', 'A01:2021'),
-                        "confidence": finding.get('confidence', 'high'),
-                        "fix_recommendation": finding.get('fix', 'Review and fix this security issue'),
-                        "cvss_score": 7.5 if severity in ['CRITICAL', 'HIGH'] else 5.0 if severity == 'MEDIUM' else 3.0
-                    }
-                    scan_results_data.append(result_data)
+            if scan_response.data and len(scan_response.data) > 0:
+                # Get the auto-generated scan ID
+                actual_scan_id = scan_response.data[0]["id"]
+                print(f"✅ Scan created with ID: {actual_scan_id}")
                 
-                if scan_results_data:
-                    results_response = supabase.table("scan_results").insert(scan_results_data).execute()
-                    print(f"✅ {len(scan_results_data)} scan results stored in database")
+                # Store scan results using the actual scan ID
+                if all_findings:
+                    scan_results_data = []
+                    for idx, finding in enumerate(all_findings[:100]):  # Limit to first 100 findings
+                        severity = finding.get('severity', 'MEDIUM').upper()
+                        if severity == 'ERROR':
+                            severity = 'CRITICAL'
+                        elif severity == 'WARNING':
+                            severity = 'HIGH'
+                        elif severity == 'INFO':
+                            severity = 'LOW'
+                        
+                        # Extract line number safely
+                        line_number = 0
+                        if 'start' in finding and isinstance(finding['start'], dict):
+                            line_number = finding['start'].get('line', 0)
+                        
+                        # Extract code snippet safely
+                        code_snippet = ''
+                        if 'extra' in finding and isinstance(finding['extra'], dict):
+                            metavars = finding['extra'].get('metavars', {})
+                            if isinstance(metavars, dict):
+                                for key, value in metavars.items():
+                                    if isinstance(value, dict) and 'abstract_content' in value:
+                                        code_snippet = str(value['abstract_content'])
+                                        break
+                        
+                        result_data = {
+                            "scan_id": actual_scan_id,  # Use the actual database-generated scan ID
+                            "analyzer": finding.get('tool', 'semgrep'),
+                            "rule_id": finding.get('check_id', f"finding-{idx}"),
+                            "severity": severity.lower(),  # Database expects lowercase
+                            "title": finding.get('message', 'Security Finding'),
+                            "description": finding.get('extra', {}).get('message', finding.get('message', '')) if isinstance(finding.get('extra'), dict) else finding.get('message', ''),
+                            "file_path": finding.get('path', 'unknown'),
+                            "line_number": line_number,
+                            "code_snippet": code_snippet,
+                            "category": "security",
+                            "vulnerability_type": "security",
+                            "owasp_category": finding.get('owasp_category', 'A01:2021'),
+                            "confidence": finding.get('confidence', 'high'),
+                            "fix_recommendation": finding.get('fix', 'Review and fix this security issue'),
+                            "cvss_score": 7.5 if severity in ['CRITICAL', 'HIGH'] else 5.0 if severity == 'MEDIUM' else 3.0
+                        }
+                        scan_results_data.append(result_data)
+                    
+                    if scan_results_data:
+                        results_response = supabase.table("scan_results").insert(scan_results_data).execute()
+                        print(f"✅ {len(scan_results_data)} scan results stored in database")
             
         except Exception as db_error:
             print(f"⚠️ Failed to store scan in database: {str(db_error)}")
             # Continue even if database storage fails
         
+        # Return the actual scan ID from database if available
+        return_scan_id = actual_scan_id if 'actual_scan_id' in locals() else scan_id
+        
         return {
-            "id": scan_id,
+            "id": return_scan_id,
             "project_id": project_id,
             "scan_type": "mobile_security",
             "status": "completed",
@@ -1098,6 +1106,52 @@ async def test_create_project(request: dict):
             
     except Exception as e:
         return {"error": f"Unexpected error: {str(e)}"}
+
+@app.get("/api/test/scan/{scan_id}/results")
+async def test_get_scan_results(scan_id: str):
+    """Test endpoint to get scan results without authentication"""
+    try:
+        # Get the supabase client
+        try:
+            import os
+            from supabase import create_client
+            url = os.getenv("SUPABASE_URL")
+            key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
+            
+            if not url or not key:
+                return {"error": "Supabase credentials not configured"}
+                
+            supabase = create_client(url, key)
+        except Exception as e:
+            return {"error": f"Failed to get Supabase client: {str(e)}"}
+        
+        # Fetch scan details
+        try:
+            scan = supabase.table("scans").select("*, projects(name)").eq("id", scan_id).single().execute()
+            if not scan.data:
+                return {"error": "Scan not found", "scan_id": scan_id}
+        except Exception as e:
+            return {"error": f"Failed to fetch scan: {str(e)}", "scan_id": scan_id}
+        
+        # Fetch scan results
+        try:
+            results = supabase.table("scan_results").select("*").eq("scan_id", scan_id).order("severity", ascending=False).execute()
+            scan_results = results.data if results.data else []
+        except Exception as e:
+            print(f"Failed to fetch scan results: {str(e)}")
+            scan_results = []
+        
+        # Return combined data
+        return {
+            "success": True,
+            "scan": scan.data,
+            "results": scan_results,
+            "result_count": len(scan_results),
+            "project_name": scan.data.get("projects", {}).get("name") if scan.data else "Unknown"
+        }
+        
+    except Exception as e:
+        return {"error": f"Unexpected error: {str(e)}", "scan_id": scan_id}
 
 # Include API routes
 try:
