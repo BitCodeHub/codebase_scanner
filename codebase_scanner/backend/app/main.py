@@ -840,6 +840,9 @@ async def scan_mobile_app(request: dict):
             scan_results.get("gitleaks", {}).get("git_secrets_found", 0)
         )
         
+        # Initialize AI insights
+        ai_insights = {}
+        
         # AI Analysis of findings
         if enable_ai_analysis and (total_issues > 0 or total_secrets > 0):
             print("🤖 Running AI analysis of security findings...")
@@ -855,6 +858,90 @@ async def scan_mobile_app(request: dict):
             except Exception as e:
                 print(f"⚠️ AI analysis failed: {e}")
                 ai_insights = {"error": f"AI analysis failed: {str(e)}"}
+        
+        # Store scan in database
+        try:
+            from src.database import get_supabase_client
+            supabase = get_supabase_client()
+            
+            # Create scan record
+            scan_data = {
+                "id": scan_id,
+                "user_id": user_id,
+                "project_id": int(project_id) if project_id and project_id.isdigit() else None,
+                "scan_type": "mobile_security",
+                "status": "completed",
+                "repository_url": repository_url,
+                "branch": branch,
+                "total_issues": total_issues,
+                "critical_issues": sum(1 for f in all_findings if f.get('severity', '').upper() == 'ERROR' or f.get('severity', '').upper() == 'CRITICAL'),
+                "high_issues": sum(1 for f in all_findings if f.get('severity', '').upper() == 'WARNING' or f.get('severity', '').upper() == 'HIGH'),
+                "medium_issues": sum(1 for f in all_findings if f.get('severity', '').upper() == 'MEDIUM'),
+                "low_issues": sum(1 for f in all_findings if f.get('severity', '').upper() == 'INFO' or f.get('severity', '').upper() == 'LOW'),
+                "created_at": datetime.utcnow().isoformat(),
+                "completed_at": datetime.utcnow().isoformat(),
+                "metadata": {
+                    "tools_used": ["semgrep", "gitleaks", "detect-secrets"],
+                    "ai_analysis_enabled": enable_ai_analysis,
+                    "scan_duration": "1-3 minutes"
+                }
+            }
+            
+            scan_response = supabase.table("scans").insert(scan_data).execute()
+            print(f"✅ Scan {scan_id} created in database")
+            
+            # Store scan results
+            if all_findings:
+                scan_results_data = []
+                for idx, finding in enumerate(all_findings[:100]):  # Limit to first 100 findings
+                    severity = finding.get('severity', 'MEDIUM').upper()
+                    if severity == 'ERROR':
+                        severity = 'CRITICAL'
+                    elif severity == 'WARNING':
+                        severity = 'HIGH'
+                    elif severity == 'INFO':
+                        severity = 'LOW'
+                    
+                    # Extract line number safely
+                    line_number = 0
+                    if 'start' in finding and isinstance(finding['start'], dict):
+                        line_number = finding['start'].get('line', 0)
+                    
+                    # Extract code snippet safely
+                    code_snippet = ''
+                    if 'extra' in finding and isinstance(finding['extra'], dict):
+                        metavars = finding['extra'].get('metavars', {})
+                        if isinstance(metavars, dict):
+                            for key, value in metavars.items():
+                                if isinstance(value, dict) and 'abstract_content' in value:
+                                    code_snippet = str(value['abstract_content'])
+                                    break
+                    
+                    result_data = {
+                        "scan_id": scan_id,
+                        "tool": finding.get('tool', 'semgrep'),
+                        "rule_id": finding.get('check_id', f"finding-{idx}"),
+                        "severity": severity,
+                        "title": finding.get('message', 'Security Finding'),
+                        "description": finding.get('extra', {}).get('message', finding.get('message', '')) if isinstance(finding.get('extra'), dict) else finding.get('message', ''),
+                        "file_path": finding.get('path', 'unknown'),
+                        "line_number": line_number,
+                        "code_snippet": code_snippet,
+                        "category": "security",
+                        "owasp_category": finding.get('owasp_category', 'A01:2021'),
+                        "confidence": finding.get('confidence', 'high'),
+                        "fix_recommendation": finding.get('fix', 'Review and fix this security issue'),
+                        "cvss_score": 7.5 if severity in ['CRITICAL', 'HIGH'] else 5.0 if severity == 'MEDIUM' else 3.0
+                    }
+                    scan_results_data.append(result_data)
+                
+                if scan_results_data:
+                    results_response = supabase.table("scan_results").insert(scan_results_data).execute()
+                    print(f"✅ {len(scan_results_data)} scan results stored in database")
+            
+        except Exception as db_error:
+            print(f"⚠️ Failed to store scan in database: {str(db_error)}")
+            # Continue even if database storage fails
         
         return {
             "id": scan_id,
