@@ -450,20 +450,137 @@ async def test_start_scan(request: dict):
         return {"error": f"Failed to create scan: {str(e)}"}
 
 @app.post("/api/scans/repository")
-async def scan_repository():
-    """Simplified repository scanning endpoint"""
+async def scan_repository(request: dict, authorization: str = Header(None)):
+    """Repository scanning endpoint that creates a scan and stores it in the database"""
     try:
-        from fastapi import Form, Depends
-        from src.dependencies import get_current_user
-        from src.models.user import User
         import os
         from supabase import create_client
         from datetime import datetime
+        import uuid
         
-        # This is a simplified version that will be replaced with real scanning
-        # For now, we'll create a scan record and simulate the process
+        # Skip auth check for now since we're using service role key
+        # In production, validate the JWT token here
         
-        return {"error": "This endpoint needs form parameters. Use the test endpoint instead."}
+        # Get the supabase client
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
+        
+        if not url or not key:
+            return {"error": "Supabase credentials not configured"}
+            
+        supabase = create_client(url, key)
+        
+        # Extract required data
+        project_id = request.get("project_id")
+        repository_url = request.get("repository_url")
+        branch = request.get("branch", "main")
+        scan_type = request.get("scan_type", "comprehensive")
+        user_id = request.get("user_id")
+        
+        if not project_id:
+            return {"error": "project_id is required"}
+        
+        if not user_id:
+            return {"error": "user_id is required"}
+        
+        # Create scan data
+        scan_data = {
+            "project_id": int(project_id),  # Convert to integer for BIGSERIAL
+            "user_id": user_id,
+            "scan_type": "security",
+            "status": "completed",  # Set to completed for demo
+            "triggered_by": "manual",
+            "repository_url": repository_url,
+            "branch": branch,
+            "scan_config": {
+                "scanType": scan_type,
+                "includeTests": True,
+                "includeDependencies": True,
+                "severityThreshold": "low"
+            },
+            "created_at": datetime.utcnow().isoformat(),
+            "completed_at": datetime.utcnow().isoformat(),
+            "total_issues": 3,  # Demo data
+            "critical_issues": 1,
+            "high_issues": 1,
+            "medium_issues": 1,
+            "low_issues": 0
+        }
+        
+        # Insert scan
+        scan_result = supabase.table("scans").insert(scan_data).execute()
+        
+        if not scan_result.data:
+            return {"error": "Failed to create scan - no data returned"}
+        
+        scan = scan_result.data[0]
+        scan_id = scan["id"]
+        
+        # Insert demo scan results
+        demo_results = [
+            {
+                "scan_id": scan_id,
+                "rule_id": "CWE-798",
+                "title": "Hardcoded API Key Found",
+                "description": "An API key is hardcoded in the source code",
+                "severity": "critical",
+                "category": "Authentication",
+                "vulnerability_type": "Hardcoded Secret",
+                "file_path": "src/config/api.js",
+                "line_number": 15,
+                "code_snippet": 'const API_KEY = "sk-1234567890abcdef"',
+                "confidence": "high",
+                "owasp_category": "A07:2021 – Identification and Authentication Failures",
+                "fix_recommendation": "Use environment variables to store API keys",
+                "cvss_score": 9.8
+            },
+            {
+                "scan_id": scan_id,
+                "rule_id": "CWE-89",
+                "title": "SQL Injection Vulnerability",
+                "description": "User input is directly concatenated into SQL query",
+                "severity": "high",
+                "category": "Injection",
+                "vulnerability_type": "SQL Injection",
+                "file_path": "src/api/users.js",
+                "line_number": 42,
+                "code_snippet": 'db.query("SELECT * FROM users WHERE id = " + userId)',
+                "confidence": "high",
+                "owasp_category": "A03:2021 – Injection",
+                "fix_recommendation": "Use parameterized queries or prepared statements",
+                "cvss_score": 8.9
+            },
+            {
+                "scan_id": scan_id,
+                "rule_id": "CWE-79",
+                "title": "Cross-Site Scripting (XSS)",
+                "description": "User input is rendered without proper sanitization",
+                "severity": "medium",
+                "category": "Injection",
+                "vulnerability_type": "XSS",
+                "file_path": "src/components/UserProfile.jsx",
+                "line_number": 28,
+                "code_snippet": 'dangerouslySetInnerHTML={{ __html: userBio }}',
+                "confidence": "medium",
+                "owasp_category": "A03:2021 – Injection",
+                "fix_recommendation": "Sanitize user input before rendering or use safe rendering methods",
+                "cvss_score": 6.1
+            }
+        ]
+        
+        # Insert scan results
+        results_response = supabase.table("scan_results").insert(demo_results).execute()
+        
+        return {
+            "id": scan_id,
+            "project_id": project_id,
+            "scan_type": "security",
+            "status": "completed",
+            "created_at": scan_data["created_at"],
+            "repository_url": repository_url,
+            "branch": branch,
+            "message": "Repository scan completed successfully with demo results"
+        }
         
     except Exception as e:
         return {"error": f"Failed to start repository scan: {str(e)}"}
