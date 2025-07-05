@@ -66,6 +66,18 @@ interface Scan {
   medium_issues: number
   low_issues: number
   ai_insights?: any
+  scan_config?: {
+    scan_id?: string
+    tools_used?: string[]
+    repository_url?: string
+    scan_profile?: string
+    files_scanned?: number
+    lines_scanned?: number
+    risk_score?: number
+    risk_level?: string
+    scan_duration?: string
+    executive_summary?: string
+  }
   project?: {
     name: string
     repository_url?: string
@@ -503,6 +515,65 @@ export default function ModernScanResults() {
               <p className="text-2xl font-bold text-blue-400">{scan.low_issues}</p>
             </div>
           </div>
+
+          {/* Enterprise Scan Info */}
+          {scan.scan_config && (
+            <div className="mt-6 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/20">
+              <div className="flex items-center space-x-2 mb-3">
+                <Shield className="w-5 h-5 text-blue-400" />
+                <h3 className="text-lg font-semibold text-white">🔒 Enterprise Security Analysis</h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                {scan.scan_config.risk_score !== undefined && (
+                  <div>
+                    <p className="text-gray-400">Risk Score</p>
+                    <p className="text-xl font-bold text-white">{scan.scan_config.risk_score}/100</p>
+                  </div>
+                )}
+                {scan.scan_config.risk_level && (
+                  <div>
+                    <p className="text-gray-400">Risk Level</p>
+                    <p className={`text-xl font-bold ${
+                      scan.scan_config.risk_level === 'CRITICAL' ? 'text-red-400' :
+                      scan.scan_config.risk_level === 'HIGH' ? 'text-orange-400' :
+                      scan.scan_config.risk_level === 'MEDIUM' ? 'text-yellow-400' :
+                      'text-green-400'
+                    }`}>{scan.scan_config.risk_level}</p>
+                  </div>
+                )}
+                {scan.scan_config.files_scanned && (
+                  <div>
+                    <p className="text-gray-400">Files Analyzed</p>
+                    <p className="text-xl font-bold text-white">{scan.scan_config.files_scanned.toLocaleString()}</p>
+                  </div>
+                )}
+                {scan.scan_config.lines_scanned && (
+                  <div>
+                    <p className="text-gray-400">Lines Scanned</p>
+                    <p className="text-xl font-bold text-white">{scan.scan_config.lines_scanned.toLocaleString()}</p>
+                  </div>
+                )}
+              </div>
+              {scan.scan_config.tools_used && scan.scan_config.tools_used.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-gray-400 text-sm mb-2">Security Tools Used ({scan.scan_config.tools_used.length}):</p>
+                  <div className="flex flex-wrap gap-2">
+                    {scan.scan_config.tools_used.map((tool: string, index: number) => (
+                      <span key={index} className="text-xs px-2 py-1 bg-gray-800/50 text-gray-300 rounded">
+                        {tool}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {scan.scan_config.executive_summary && (
+                <div className="mt-4">
+                  <p className="text-gray-400 text-sm mb-2">Executive Summary:</p>
+                  <p className="text-gray-300 text-sm leading-relaxed">{scan.scan_config.executive_summary}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* AI Insights */}
           {scan.ai_insights && (

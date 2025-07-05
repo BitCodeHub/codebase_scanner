@@ -137,18 +137,18 @@ export default function ModernProjectsPage() {
 
       const repositoryUrl = project.repository_url || 'https://github.com/OWASP/NodeGoat'
       
-      // Show starting notification
-      showNotification('success', 'Starting security scan... This may take a few minutes.')
+      // Show starting notification for enterprise scan
+      showNotification('success', '🔒 Starting ENTERPRISE security scan with all 15 professional tools... This will take several minutes for thorough analysis.')
       
-      // Create abort controller for timeout
+      // Create abort controller for timeout - enterprise scans need more time
       const controller = new AbortController()
       const timeoutId = setTimeout(() => {
         controller.abort()
-        console.error('Scan request timed out after 30 seconds')
-      }, 30 * 1000) // 30 second timeout for simpler scan
+        console.error('Scan request timed out after 10 minutes')
+      }, 10 * 60 * 1000) // 10 minute timeout for enterprise comprehensive scan
       
-      // Use the simpler scan endpoint for faster results
-      const scanUrl = getFullApiUrl('/api/scans/repository')
+      // Use ENTERPRISE COMPREHENSIVE scanner with all 15 security tools
+      const scanUrl = getFullApiUrl('/api/scans/comprehensive')
       console.log('Scan URL:', scanUrl)
       console.log('Request body:', {
         project_id: projectId,
@@ -227,12 +227,12 @@ export default function ModernProjectsPage() {
     } catch (error) {
       console.error('Error starting scan:', error)
       
-      let errorMessage = 'Failed to start scan'
+      let errorMessage = 'Failed to start enterprise scan'
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          errorMessage = 'Scan request timed out. The scan may still be running on the server. Please check back later.'
+          errorMessage = 'Enterprise scan is taking longer than expected. The comprehensive analysis with all 15 tools may still be running. Please refresh in a few minutes to see results.'
         } else if (error.message.includes('Failed to fetch')) {
-          errorMessage = 'Network error: Unable to reach the scan server. Please check your connection and try again.'
+          errorMessage = 'Network error: Unable to reach the enterprise scan server. Please check your connection and try again.'
         } else {
           errorMessage = error.message
         }
@@ -488,13 +488,20 @@ export default function ModernProjectsPage() {
                   key={project.id}
                   className="group bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 hover:border-gray-600/50 transition-all hover:transform hover:scale-[1.02] hover:shadow-2xl relative"
                 >
-                  {/* Scanning overlay */}
+                  {/* Enterprise Scanning overlay */}
                   {isScanning && (
-                    <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm rounded-2xl z-10 flex items-center justify-center">
-                      <div className="text-center">
-                        <Loader2 className="w-12 h-12 text-blue-400 animate-spin mx-auto mb-3" />
-                        <p className="text-white font-medium">Scanning repository...</p>
-                        <p className="text-gray-400 text-sm mt-1">This may take a moment</p>
+                    <div className="absolute inset-0 bg-gray-900/90 backdrop-blur-sm rounded-2xl z-10 flex items-center justify-center">
+                      <div className="text-center px-6">
+                        <Shield className="w-16 h-16 text-blue-400 animate-pulse mx-auto mb-4" />
+                        <p className="text-white font-bold text-lg mb-2">🔒 Enterprise Security Analysis</p>
+                        <p className="text-gray-300 text-sm mb-3">Running all 15 professional security tools:</p>
+                        <div className="text-xs text-gray-400 space-y-1 mb-3">
+                          <p>• Semgrep • Bandit • Gitleaks • TruffleHog</p>
+                          <p>• Safety • Retire.js • JADX • APKLeaks</p>
+                          <p>• QARK • ESLint • njsscan • Checkov</p>
+                        </div>
+                        <Loader2 className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-2" />
+                        <p className="text-gray-400 text-xs">This comprehensive scan takes 3-5 minutes</p>
                       </div>
                     </div>
                   )}
