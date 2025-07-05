@@ -275,9 +275,16 @@ class EnterpriseSecurityScanner:
         return report
     
     def _clone_repository(self, url: str, branch: str, path: str) -> Dict[str, Any]:
-        """Clone repository with proper error handling"""
+        """Clone repository with comprehensive error handling and validation"""
         try:
-            # Try with branch
+            print(f"   - Repository URL: {url}")
+            print(f"   - Target branch: {branch}")
+            print(f"   - Clone location: {path}")
+            
+            # Ensure parent directory exists
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            
+            # Try with specific branch first
             result = subprocess.run(
                 ["git", "clone", "--depth", "1", "-b", branch, url, path],
                 capture_output=True,
@@ -286,7 +293,8 @@ class EnterpriseSecurityScanner:
             )
             
             if result.returncode != 0:
-                # Try without branch
+                print(f"   - Branch '{branch}' not found, trying default branch...")
+                # Try without specific branch (use default)
                 result = subprocess.run(
                     ["git", "clone", "--depth", "1", url, path],
                     capture_output=True,
@@ -295,11 +303,26 @@ class EnterpriseSecurityScanner:
                 )
                 
                 if result.returncode != 0:
-                    return {"success": False, "error": result.stderr}
+                    error_msg = result.stderr or result.stdout or "Unknown git clone error"
+                    print(f"   - Clone failed: {error_msg}")
+                    return {"success": False, "error": error_msg}
             
-            return {"success": True}
+            # Verify the clone was successful
+            if not os.path.exists(path) or not os.path.isdir(path):
+                return {"success": False, "error": "Repository directory was not created"}
+            
+            # Count files to verify clone
+            file_count = sum(len(files) for _, _, files in os.walk(path))
+            if file_count == 0:
+                return {"success": False, "error": "Repository appears to be empty"}
+            
+            print(f"   - Clone successful: {file_count} files downloaded")
+            return {"success": True, "files_cloned": file_count}
+            
+        except subprocess.TimeoutExpired:
+            return {"success": False, "error": "Repository clone timed out after 5 minutes"}
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": f"Clone error: {str(e)}"}
     
     def _analyze_repository(self, repo_path: str) -> Dict[str, Any]:
         """Analyze repository structure and statistics"""
@@ -815,7 +838,7 @@ class EnterpriseSecurityScanner:
         }
     
     def _run_eslint_security_enterprise(self, repo_path: str) -> Dict[str, Any]:
-        """Run ESLint with comprehensive security rules"""
+        """Run ESLint with comprehensive security rules for JavaScript/TypeScript"""
         findings = []
         
         try:
@@ -913,9 +936,17 @@ class EnterpriseSecurityScanner:
             if os.path.exists(config_path):
                 os.remove(config_path)
             
+            # If ESLint not available or no JS files, add common JS security patterns
+            if len(findings) == 0:
+                js_findings = self._scan_javascript_security(repo_path)
+                findings.extend(js_findings)
+            
             self.tools_executed.append("eslint-security")
         except Exception as e:
             print(f" Error: {str(e)}")
+            # Add common JS security findings even if ESLint fails
+            js_findings = self._scan_javascript_security(repo_path)
+            findings.extend(js_findings)
             self.tools_failed.append("eslint-security")
         
         return {
@@ -925,7 +956,7 @@ class EnterpriseSecurityScanner:
         }
     
     def _run_njsscan_enterprise(self, repo_path: str) -> Dict[str, Any]:
-        """Run njsscan for Node.js security analysis"""
+        """Run njsscan for Node.js security analysis with comprehensive patterns"""
         findings = []
         
         try:
@@ -969,9 +1000,17 @@ class EnterpriseSecurityScanner:
                 else:
                     print(" No Node.js files found")
             
+            # If njsscan not available, use our Node.js security patterns
+            if len(findings) == 0:
+                nodejs_findings = self._scan_nodejs_security(repo_path)
+                findings.extend(nodejs_findings)
+            
             self.tools_executed.append("njsscan")
         except Exception as e:
             print(f" Error: {str(e)}")
+            # Add Node.js security findings even if njsscan fails
+            nodejs_findings = self._scan_nodejs_security(repo_path)
+            findings.extend(nodejs_findings)
             self.tools_failed.append("njsscan")
         
         return {
@@ -981,7 +1020,7 @@ class EnterpriseSecurityScanner:
         }
     
     def _run_checkov_enterprise(self, repo_path: str) -> Dict[str, Any]:
-        """Run Checkov for Infrastructure as Code security"""
+        """Run Checkov for Infrastructure as Code security with comprehensive coverage"""
         findings = []
         
         try:
@@ -1022,9 +1061,17 @@ class EnterpriseSecurityScanner:
             else:
                 print(" No IaC configurations found")
             
+            # If Checkov not available, use IaC security patterns
+            if len(findings) == 0:
+                iac_findings = self._scan_iac_security(repo_path)
+                findings.extend(iac_findings)
+            
             self.tools_executed.append("checkov")
         except Exception as e:
             print(f" Error: {str(e)}")
+            # Add IaC security findings even if Checkov fails
+            iac_findings = self._scan_iac_security(repo_path)
+            findings.extend(iac_findings)
             self.tools_failed.append("checkov")
         
         return {
@@ -1168,28 +1215,179 @@ class EnterpriseSecurityScanner:
         }
     
     def _run_apkleaks_check(self, repo_path: str) -> Dict[str, Any]:
-        """Check for Android-related secrets"""
+        """Check for Android-related secrets and mobile app vulnerabilities"""
         findings = []
         
-        # Similar implementation to JADX
-        self.tools_executed.append("apkleaks")
+        try:
+            print("   - Scanning for Android security issues...", end="", flush=True)
+            
+            # Check for Android-specific files and configurations
+            android_files = []
+            android_patterns = {
+                "AndroidManifest.xml": "Android Manifest",
+                "build.gradle": "Android Build File",
+                "app/build.gradle": "App Build Configuration",
+                "strings.xml": "Android Strings",
+                "config.xml": "Cordova Configuration",
+                "Info.plist": "iOS Configuration"
+            }
+            
+            for root, dirs, files in os.walk(repo_path):
+                for file in files:
+                    file_lower = file.lower()
+                    if any(pattern.lower() in file_lower for pattern in android_patterns.keys()):
+                        android_files.append(os.path.join(root, file))
+            
+            # Scan Android files for security issues
+            mobile_issues = 0
+            for file_path in android_files:
+                try:
+                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read()
+                    
+                    # Check for common mobile security issues
+                    mobile_checks = [
+                        (r'android:allowBackup="true"', "ANDROID_BACKUP_ENABLED", "high", "Android Backup Enabled"),
+                        (r'android:debuggable="true"', "ANDROID_DEBUG_ENABLED", "critical", "Debug Mode Enabled in Production"),
+                        (r'android:exported="true"', "ANDROID_EXPORTED_COMPONENT", "medium", "Exported Android Component"),
+                        (r'http://', "HTTP_USAGE", "medium", "Insecure HTTP Usage"),
+                        (r'TrustAllCerts|trustAllCerts', "TRUST_ALL_CERTS", "critical", "Trust All Certificates"),
+                        (r'setJavaScriptEnabled\(true\)', "JAVASCRIPT_ENABLED", "medium", "JavaScript Enabled in WebView"),
+                        (r'addJavascriptInterface', "JAVASCRIPT_INTERFACE", "high", "JavaScript Interface Exposed")
+                    ]
+                    
+                    for pattern, rule_id, severity, title in mobile_checks:
+                        if re.search(pattern, content, re.IGNORECASE):
+                            line_matches = re.finditer(pattern, content, re.IGNORECASE)
+                            for match in line_matches:
+                                line_no = content[:match.start()].count('\n') + 1
+                                
+                                findings.append({
+                                    "tool": "apkleaks",
+                                    "rule_id": rule_id,
+                                    "title": title,
+                                    "severity": severity,
+                                    "category": "Mobile Security",
+                                    "file_path": file_path.replace(repo_path + "/", ""),
+                                    "line_number": line_no,
+                                    "code_snippet": match.group(0),
+                                    "description": f"{title} detected in mobile application configuration",
+                                    "fix_recommendation": self._get_mobile_fix(rule_id),
+                                    "confidence": "HIGH"
+                                })
+                                mobile_issues += 1
+                except:
+                    pass
+            
+            if mobile_issues > 0:
+                print(f" Found {mobile_issues} mobile security issues")
+            else:
+                print(" No mobile security issues found")
+            
+            self.tools_executed.append("apkleaks")
+        except Exception as e:
+            print(f" Error: {str(e)}")
+            self.tools_failed.append("apkleaks")
         
         return {
             "status": "completed",
-            "findings_count": 0,
+            "findings_count": len(findings),
             "findings": findings
         }
     
     def _run_qark_check(self, repo_path: str) -> Dict[str, Any]:
-        """Check for Android security issues"""
+        """Check for Android security issues using QARK-style analysis"""
         findings = []
         
-        # Similar implementation to JADX
-        self.tools_executed.append("qark")
+        try:
+            print("   - Running Android security assessment...", end="", flush=True)
+            
+            # OWASP Mobile Top 10 checks
+            mobile_security_issues = 0
+            
+            for root, dirs, files in os.walk(repo_path):
+                for file in files:
+                    if file.endswith(('.java', '.kt', '.xml', '.js', '.swift', '.m')):
+                        file_path = os.path.join(root, file)
+                        
+                        try:
+                            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                content = f.read()
+                            
+                            # Mobile-specific security patterns
+                            mobile_patterns = [
+                                # M1: Improper Platform Usage
+                                (r'NSAllowsArbitraryLoads.*true', "M1_ARBITRARY_LOADS", "high", "Arbitrary Network Loads Allowed"),
+                                (r'android:usesCleartextTraffic="true"', "M1_CLEARTEXT_TRAFFIC", "high", "Cleartext Traffic Allowed"),
+                                
+                                # M2: Insecure Data Storage
+                                (r'SharedPreferences.*MODE_WORLD_READABLE', "M2_WORLD_READABLE", "critical", "World Readable Shared Preferences"),
+                                (r'openFileOutput.*MODE_WORLD_READABLE', "M2_WORLD_READABLE_FILE", "critical", "World Readable File Storage"),
+                                (r'SQLiteDatabase.*OPEN_READWRITE', "M2_SQLITE_READWRITE", "medium", "SQLite Database World Writable"),
+                                
+                                # M3: Insecure Communication
+                                (r'setHostnameVerifier.*ALLOW_ALL', "M3_HOSTNAME_VERIFIER", "critical", "Hostname Verification Disabled"),
+                                (r'TrustManager.*checkServerTrusted.*\{\s*\}', "M3_TRUST_ALL", "critical", "Trust All SSL Certificates"),
+                                
+                                # M4: Insecure Authentication
+                                (r'biometric.*setNegativeButtonText.*""', "M4_WEAK_BIOMETRIC", "medium", "Weak Biometric Authentication"),
+                                (r'KeyguardManager.*isKeyguardSecure.*false', "M4_NO_KEYGUARD", "high", "No Keyguard Protection"),
+                                
+                                # M5: Insufficient Cryptography
+                                (r'Cipher.getInstance\("DES', "M5_WEAK_CIPHER_DES", "critical", "Weak DES Encryption"),
+                                (r'Cipher.getInstance\("AES/ECB', "M5_ECB_MODE", "high", "ECB Encryption Mode"),
+                                (r'MessageDigest.getInstance\("MD5', "M5_MD5_HASH", "medium", "MD5 Hash Algorithm"),
+                                
+                                # M6: Insecure Authorization
+                                (r'checkCallingPermission.*PERMISSION_GRANTED', "M6_WEAK_PERMISSION", "medium", "Weak Permission Check"),
+                                
+                                # M7: Client Code Quality
+                                (r'eval\s*\(.*\)', "M7_CODE_INJECTION", "critical", "Code Injection via eval()"),
+                                (r'Runtime.getRuntime\(\).exec', "M7_COMMAND_INJECTION", "critical", "Command Injection"),
+                                
+                                # M8: Code Tampering
+                                (r'setWebContentsDebuggingEnabled\(true\)', "M8_DEBUG_ENABLED", "high", "WebView Debugging Enabled"),
+                                
+                                # M9: Reverse Engineering
+                                (r'Log\.[dv]\(', "M9_DEBUG_LOGS", "low", "Debug Logging in Production"),
+                                (r'System.out.print', "M9_SYSTEM_OUT", "low", "System Output in Production"),
+                                
+                                # M10: Extraneous Functionality
+                                (r'adb.*enabled|ro.debuggable.*1', "M10_DEBUG_FUNCTIONALITY", "medium", "Debug Functionality Enabled")
+                            ]
+                            
+                            for pattern, rule_id, severity, title in mobile_patterns:
+                                matches = re.finditer(pattern, content, re.IGNORECASE)
+                                for match in matches:
+                                    line_no = content[:match.start()].count('\n') + 1
+                                    
+                                    findings.append({
+                                        "tool": "qark",
+                                        "rule_id": rule_id,
+                                        "title": title,
+                                        "severity": severity,
+                                        "category": "OWASP Mobile Top 10",
+                                        "file_path": file_path.replace(repo_path + "/", ""),
+                                        "line_number": line_no,
+                                        "code_snippet": match.group(0),
+                                        "description": f"{title} - OWASP Mobile security issue",
+                                        "fix_recommendation": self._get_mobile_fix(rule_id),
+                                        "owasp_mobile": rule_id.split('_')[0],
+                                        "confidence": "HIGH"
+                                    })
+                                    mobile_security_issues += 1
+                        except:
+                            pass
+            
+            print(f" Found {mobile_security_issues} OWASP Mobile Top 10 issues")
+            self.tools_executed.append("qark")
+        except Exception as e:
+            print(f" Error: {str(e)}")
+            self.tools_failed.append("qark")
         
         return {
             "status": "completed",
-            "findings_count": 0,
+            "findings_count": len(findings),
             "findings": findings
         }
     
@@ -2326,6 +2524,133 @@ BUSINESS IMPACT:
 6. Follow CIS benchmarks for your cloud provider
 7. Implement infrastructure as code with security scanning""")
     
+    def _get_mobile_fix(self, rule_id: str) -> str:
+        """Get mobile security fix recommendations"""
+        fixes = {
+            "ANDROID_BACKUP_ENABLED": """Set android:allowBackup="false" in AndroidManifest.xml:
+1. Disable automatic backup to prevent data leakage
+2. Implement custom backup strategy if needed
+3. Use android:backupAgent for controlled backup
+4. Encrypt sensitive data before backup""",
+            
+            "ANDROID_DEBUG_ENABLED": """CRITICAL - Remove debug mode from production:
+1. Set android:debuggable="false" in AndroidManifest.xml
+2. Use build variants to control debug settings
+3. Remove all debug code before release
+4. Implement proper logging without debug mode""",
+            
+            "ANDROID_EXPORTED_COMPONENT": """Review exported components:
+1. Set android:exported="false" for internal components
+2. Use intent filters only when necessary
+3. Implement proper permission checks
+4. Validate all incoming intents""",
+            
+            "HTTP_USAGE": """Replace HTTP with HTTPS:
+1. Use HTTPS for all network communications
+2. Implement certificate pinning
+3. Set android:usesCleartextTraffic="false"
+4. Use Network Security Configuration""",
+            
+            "TRUST_ALL_CERTS": """CRITICAL - Never trust all certificates:
+1. Implement proper certificate validation
+2. Use certificate pinning for critical connections
+3. Handle certificate errors appropriately
+4. Use system trust store""",
+            
+            "JAVASCRIPT_ENABLED": """Secure WebView JavaScript:
+1. Disable JavaScript if not needed: webView.getSettings().setJavaScriptEnabled(false)
+2. Implement Content Security Policy
+3. Validate all JavaScript interfaces
+4. Use modern WebView security features""",
+            
+            "JAVASCRIPT_INTERFACE": """Secure JavaScript interfaces:
+1. Use @JavascriptInterface annotation
+2. Validate all input from JavaScript
+3. Implement proper access controls
+4. Consider removing interface if not essential""",
+            
+            # OWASP Mobile Top 10 fixes
+            "M1_ARBITRARY_LOADS": """Disable arbitrary network loads:
+1. Set NSAllowsArbitraryLoads to false in Info.plist
+2. Implement App Transport Security (ATS)
+3. Use HTTPS for all connections
+4. Certificate pinning for critical APIs""",
+            
+            "M1_CLEARTEXT_TRAFFIC": """Disable cleartext traffic:
+1. Set android:usesCleartextTraffic="false"
+2. Implement Network Security Configuration
+3. Use HTTPS for all communications
+4. Enable certificate transparency""",
+            
+            "M2_WORLD_READABLE": """Fix insecure data storage:
+1. Use MODE_PRIVATE for SharedPreferences
+2. Encrypt sensitive data before storage
+3. Use Android Keystore for key management
+4. Implement proper access controls""",
+            
+            "M3_HOSTNAME_VERIFIER": """Enable hostname verification:
+1. Remove ALLOW_ALL hostname verifier
+2. Implement proper hostname verification
+3. Use default hostname verifier
+4. Add certificate pinning""",
+            
+            "M3_TRUST_ALL": """Implement proper certificate validation:
+1. Remove trust-all certificate managers
+2. Use system trust store
+3. Implement certificate pinning
+4. Handle certificate errors securely""",
+            
+            "M4_WEAK_BIOMETRIC": """Strengthen biometric authentication:
+1. Require device credential fallback
+2. Use BiometricPrompt with proper configuration
+3. Implement timeout for biometric authentication
+4. Store biometric data securely""",
+            
+            "M5_WEAK_CIPHER_DES": """Replace weak encryption:
+1. Use AES-256-GCM instead of DES
+2. Implement proper key management
+3. Use Android Keystore for key storage
+4. Regular key rotation""",
+            
+            "M5_ECB_MODE": """Fix insecure cipher mode:
+1. Use AES/GCM/NoPadding instead of ECB
+2. Generate unique IV for each encryption
+3. Implement authenticated encryption
+4. Use secure random for IV generation""",
+            
+            "M7_CODE_INJECTION": """Prevent code injection:
+1. Never use eval() with user input
+2. Implement input validation and sanitization
+3. Use safe alternatives like JSON.parse()
+4. Apply principle of least privilege""",
+            
+            "M7_COMMAND_INJECTION": """Prevent command injection:
+1. Avoid Runtime.exec() with user input
+2. Use allowlists for command validation
+3. Implement proper input sanitization
+4. Use safer alternatives when possible""",
+            
+            "M8_DEBUG_ENABLED": """Disable debug features in production:
+1. Set setWebContentsDebuggingEnabled(false)
+2. Remove all debug code from release builds
+3. Use build configurations to control debug features
+4. Implement proper error handling without debug info""",
+            
+            "M9_DEBUG_LOGS": """Remove debug logging from production:
+1. Use ProGuard to remove Log.d() and Log.v() calls
+2. Implement proper production logging
+3. Never log sensitive information
+4. Use conditional logging based on build type"""
+        }
+        
+        return fixes.get(rule_id, """Follow OWASP Mobile Security Guidelines:
+1. Implement defense in depth
+2. Use platform security features
+3. Regular security testing and code review
+4. Follow mobile security best practices
+5. Implement proper data protection
+6. Use secure communication protocols""")
+    
     def _generate_common_findings(self, repo_path: str) -> List[Dict[str, Any]]:
         """Generate common security findings when tools aren't available"""
         findings = []
@@ -2459,6 +2784,414 @@ BUSINESS IMPACT:
             "CONSOLE_LOG_SECRETS": "Remove console.log statements that may expose sensitive information like passwords or tokens."
         }
         return fixes.get(rule_id, "Review and fix this security issue based on security best practices.")
+    
+    def _scan_javascript_security(self, repo_path: str) -> List[Dict[str, Any]]:
+        """Scan JavaScript/TypeScript files for security issues"""
+        findings = []
+        
+        js_security_patterns = [
+            # XSS vulnerabilities
+            (r'innerHTML\s*=\s*[^;]*\+', "XSS_INNERHTML_CONCAT", "high", "XSS via innerHTML concatenation"),
+            (r'document\.write\s*\([^)]*\+', "XSS_DOCUMENT_WRITE", "high", "XSS via document.write concatenation"),
+            (r'\$\([^)]*\)\.html\s*\([^)]*\+', "XSS_JQUERY_HTML", "high", "XSS via jQuery html() concatenation"),
+            
+            # Code injection
+            (r'eval\s*\([^)]*\+', "CODE_INJECTION_EVAL", "critical", "Code injection via eval()"),
+            (r'Function\s*\([^)]*\+', "CODE_INJECTION_FUNCTION", "critical", "Code injection via Function constructor"),
+            (r'setTimeout\s*\([^)]*\+', "CODE_INJECTION_SETTIMEOUT", "high", "Code injection via setTimeout"),
+            (r'setInterval\s*\([^)]*\+', "CODE_INJECTION_SETINTERVAL", "high", "Code injection via setInterval"),
+            
+            # Prototype pollution
+            (r'Object\.assign\s*\(.*\.__proto__', "PROTOTYPE_POLLUTION_ASSIGN", "high", "Prototype pollution via Object.assign"),
+            (r'\[.*__proto__.*\]\s*=', "PROTOTYPE_POLLUTION_BRACKET", "high", "Prototype pollution via bracket notation"),
+            
+            # Insecure randomness
+            (r'Math\.random\s*\(\)', "WEAK_RANDOM_MATH", "medium", "Weak random number generation"),
+            
+            # Hardcoded secrets
+            (r'(api_key|apikey|api-key|secret|token|password)\s*[:=]\s*[\'"][a-zA-Z0-9]{8,}[\'"]', "HARDCODED_SECRET_JS", "critical", "Hardcoded secret in JavaScript"),
+            
+            # Insecure HTTP
+            (r'http://[^\s\'";]+', "INSECURE_HTTP_JS", "medium", "Insecure HTTP URL"),
+            
+            # Dangerous functions
+            (r'dangerouslySetInnerHTML', "REACT_DANGEROUS_HTML", "high", "React dangerouslySetInnerHTML usage"),
+            (r'\$\([^)]*\)\.attr\s*\(\s*[\'"]href[\'"]', "JQUERY_HREF_INJECTION", "medium", "Potential href injection via jQuery"),
+            
+            # Node.js specific
+            (r'require\s*\([^)]*\+', "NODEJS_REQUIRE_INJECTION", "critical", "Node.js require() injection"),
+            (r'fs\.readFile\s*\([^)]*\+', "NODEJS_PATH_TRAVERSAL", "high", "Path traversal in fs.readFile"),
+            (r'child_process\.exec\s*\([^)]*\+', "NODEJS_COMMAND_INJECTION", "critical", "Command injection in child_process.exec"),
+            
+            # Client-side storage
+            (r'localStorage\.setItem\s*\([^)]*password', "LOCALSTORAGE_PASSWORD", "high", "Password stored in localStorage"),
+            (r'sessionStorage\.setItem\s*\([^)]*token', "SESSIONSTORAGE_TOKEN", "medium", "Token stored in sessionStorage"),
+            
+            # Crypto issues
+            (r'crypto\.createHash\s*\([\'"]md5[\'"]\)', "WEAK_HASH_MD5_JS", "medium", "Weak MD5 hash usage"),
+            (r'crypto\.createHash\s*\([\'"]sha1[\'"]\)', "WEAK_HASH_SHA1_JS", "medium", "Weak SHA1 hash usage")
+        ]
+        
+        js_files_scanned = 0
+        for root, dirs, files in os.walk(repo_path):
+            if '.git' in dirs:
+                dirs.remove('.git')
+            
+            for file in files:
+                if file.endswith(('.js', '.jsx', '.ts', '.tsx', '.vue', '.svelte')):
+                    file_path = os.path.join(root, file)
+                    js_files_scanned += 1
+                    
+                    try:
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            content = f.read()
+                            lines = content.split('\n')
+                        
+                        for pattern, rule_id, severity, title in js_security_patterns:
+                            matches = re.finditer(pattern, content, re.IGNORECASE)
+                            for match in matches:
+                                line_no = content[:match.start()].count('\n') + 1
+                                
+                                findings.append({
+                                    "tool": "javascript-security-scanner",
+                                    "rule_id": rule_id,
+                                    "title": title,
+                                    "severity": severity,
+                                    "category": "JavaScript Security",
+                                    "file_path": file_path.replace(repo_path + "/", ""),
+                                    "line_number": line_no,
+                                    "code_snippet": lines[line_no-1].strip() if line_no <= len(lines) else "",
+                                    "description": f"{title} detected in JavaScript/TypeScript code",
+                                    "fix_recommendation": self._get_js_fix(rule_id),
+                                    "confidence": "HIGH"
+                                })
+                    except:
+                        pass
+        
+        print(f"   - Scanned {js_files_scanned} JavaScript files, found {len(findings)} security issues")
+        return findings
+    
+    def _get_js_fix(self, rule_id: str) -> str:
+        """Get JavaScript security fix recommendations"""
+        fixes = {
+            "XSS_INNERHTML_CONCAT": "Use textContent instead of innerHTML, or sanitize with DOMPurify before setting innerHTML.",
+            "XSS_DOCUMENT_WRITE": "Avoid document.write(). Use DOM manipulation methods like appendChild() instead.",
+            "XSS_JQUERY_HTML": "Use jQuery .text() instead of .html(), or sanitize content with DOMPurify.",
+            "CODE_INJECTION_EVAL": "Never use eval() with user input. Use JSON.parse() for JSON data or alternative safe methods.",
+            "CODE_INJECTION_FUNCTION": "Avoid Function constructor with user input. Use object mapping or switch statements.",
+            "CODE_INJECTION_SETTIMEOUT": "Pass function reference to setTimeout instead of string. Use arrow functions.",
+            "CODE_INJECTION_SETINTERVAL": "Pass function reference to setInterval instead of string. Use arrow functions.",
+            "PROTOTYPE_POLLUTION_ASSIGN": "Validate object keys before Object.assign(). Use Object.create(null) for safe objects.",
+            "PROTOTYPE_POLLUTION_BRACKET": "Validate property names. Use Map instead of objects for dynamic properties.",
+            "WEAK_RANDOM_MATH": "Use crypto.getRandomValues() or crypto.randomUUID() for cryptographic randomness.",
+            "HARDCODED_SECRET_JS": "Move secrets to environment variables or secure configuration management.",
+            "INSECURE_HTTP_JS": "Use HTTPS URLs only. Implement Content Security Policy to block HTTP requests.",
+            "REACT_DANGEROUS_HTML": "Sanitize HTML with DOMPurify before using dangerouslySetInnerHTML.",
+            "JQUERY_HREF_INJECTION": "Validate URLs before setting href. Use URL constructor to parse and validate.",
+            "NODEJS_REQUIRE_INJECTION": "Never use require() with user input. Use allowlists for module names.",
+            "NODEJS_PATH_TRAVERSAL": "Use path.resolve() and validate paths. Check if path is within allowed directory.",
+            "NODEJS_COMMAND_INJECTION": "Use child_process.spawn() with argument array instead of exec() with strings.",
+            "LOCALSTORAGE_PASSWORD": "Never store passwords in localStorage. Use secure session management.",
+            "SESSIONSTORAGE_TOKEN": "Store tokens in secure HttpOnly cookies or use short-lived tokens.",
+            "WEAK_HASH_MD5_JS": "Use SHA-256 or SHA-512 instead of MD5. For passwords, use bcrypt or scrypt.",
+            "WEAK_HASH_SHA1_JS": "Use SHA-256 or SHA-512 instead of SHA1. SHA1 is cryptographically broken."
+        }
+        
+        return fixes.get(rule_id, "Apply JavaScript security best practices: validate input, sanitize output, use secure APIs.")
+    
+    def _scan_nodejs_security(self, repo_path: str) -> List[Dict[str, Any]]:
+        """Scan Node.js specific security vulnerabilities"""
+        findings = []
+        
+        # Node.js specific security patterns
+        nodejs_patterns = [
+            # Path traversal
+            (r'fs\.readFile\s*\([^)]*req\.(query|params|body)', "NODEJS_PATH_TRAVERSAL_REQ", "critical", "Path traversal via request parameters"),
+            (r'path\.join\s*\(__dirname[^)]*req\.(query|params|body)', "NODEJS_PATH_TRAVERSAL_JOIN", "critical", "Path traversal in path.join"),
+            
+            # Command injection  
+            (r'exec\s*\([^)]*req\.(query|params|body)', "NODEJS_CMD_INJECTION_REQ", "critical", "Command injection via request"),
+            (r'spawn\s*\([^)]*req\.(query|params|body)', "NODEJS_CMD_INJECTION_SPAWN", "critical", "Command injection in spawn"),
+            (r'execSync\s*\([^)]*req\.(query|params|body)', "NODEJS_CMD_INJECTION_SYNC", "critical", "Synchronous command injection"),
+            
+            # SQL injection patterns
+            (r'query\s*\([^)]*\+[^)]*req\.(query|params|body)', "NODEJS_SQL_INJECTION", "critical", "SQL injection in database query"),
+            (r'SELECT.*\+.*req\.(query|params|body)', "NODEJS_SQL_CONCAT", "critical", "SQL injection via string concatenation"),
+            
+            # Regex DoS
+            (r'new\s+RegExp\s*\([^)]*req\.(query|params|body)', "NODEJS_REGEX_DOS", "high", "Regular Expression Denial of Service"),
+            
+            # Insecure randomness
+            (r'Math\.random\s*\(\).*token|Math\.random\s*\(\).*password', "NODEJS_WEAK_RANDOM_CRED", "high", "Weak randomness for credentials"),
+            
+            # Hardcoded secrets
+            (r'process\.env\.NODE_ENV.*production.*password', "NODEJS_HARDCODED_PROD_PASS", "critical", "Hardcoded production password"),
+            (r'mongodb://[^:]+:[^@]+@', "NODEJS_MONGODB_CREDS", "critical", "MongoDB credentials in connection string"),
+            
+            # Insecure HTTP headers
+            (r'res\.header\s*\([^)]*X-Powered-By', "NODEJS_XPOWEREDBY", "low", "X-Powered-By header exposure"),
+            (r'app\.disable\s*\([^)]*x-powered-by.*false', "NODEJS_XPOWEREDBY_ENABLED", "low", "X-Powered-By not disabled"),
+            
+            # Session security
+            (r'session\s*\([^)]*secret.*[\'"][^\'"){8}[\'"]', "NODEJS_WEAK_SESSION_SECRET", "high", "Weak session secret"),
+            (r'session\s*\([^)]*secure.*false', "NODEJS_INSECURE_SESSION", "high", "Insecure session configuration"),
+            
+            # CORS issues
+            (r'Access-Control-Allow-Origin.*\*', "NODEJS_CORS_WILDCARD", "medium", "CORS wildcard origin"),
+            (r'cors\s*\([^)]*origin.*true', "NODEJS_CORS_ANY_ORIGIN", "medium", "CORS allows any origin"),
+            
+            # File upload vulnerabilities
+            (r'multer\s*\([^)]*dest.*req\.(query|params|body)', "NODEJS_UPLOAD_PATH_INJECTION", "high", "File upload path injection"),
+            (r'fs\.writeFile\s*\([^)]*req\.(query|params|body)', "NODEJS_ARBITRARY_FILE_WRITE", "critical", "Arbitrary file write"),
+            
+            # Template injection
+            (r'render\s*\([^)]*req\.(query|params|body)', "NODEJS_TEMPLATE_INJECTION", "high", "Server-side template injection"),
+            
+            # Prototype pollution
+            (r'JSON\.parse\s*\([^)]*req\.(query|params|body)', "NODEJS_JSON_PARSE_UNSAFE", "medium", "Unsafe JSON parsing"),
+            (r'Object\.assign\s*\([^)]*req\.(query|params|body)', "NODEJS_OBJECT_ASSIGN_POLLUTION", "high", "Prototype pollution via Object.assign"),
+            
+            # XXE vulnerabilities  
+            (r'xml2js\.parseString\s*\([^)]*req\.(query|params|body)', "NODEJS_XXE_XML2JS", "high", "XXE vulnerability in xml2js"),
+            
+            # NoSQL injection
+            (r'find\s*\([^)]*req\.(query|params|body)', "NODEJS_NOSQL_INJECTION", "high", "NoSQL injection in find query"),
+            (r'aggregate\s*\([^)]*req\.(query|params|body)', "NODEJS_NOSQL_AGGREGATE", "high", "NoSQL injection in aggregate"),
+            
+            # Insecure dependencies
+            (r'require\s*\([^)]*req\.(query|params|body)', "NODEJS_DYNAMIC_REQUIRE", "critical", "Dynamic require() with user input"),
+            
+            # Debug information exposure
+            (r'console\.log\s*\([^)]*password|console\.log\s*\([^)]*secret', "NODEJS_CONSOLE_LOG_SECRETS", "medium", "Secrets in console.log"),
+            (r'console\.error\s*\([^)]*stack', "NODEJS_STACK_TRACE_EXPOSURE", "low", "Stack trace exposure")
+        ]
+        
+        nodejs_files = 0
+        for root, dirs, files in os.walk(repo_path):
+            if '.git' in dirs:
+                dirs.remove('.git')
+            
+            for file in files:
+                if file.endswith(('.js', '.ts', '.json')) and not file.endswith('.min.js'):
+                    file_path = os.path.join(root, file)
+                    nodejs_files += 1
+                    
+                    try:
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            content = f.read()
+                            lines = content.split('\n')
+                        
+                        for pattern, rule_id, severity, title in nodejs_patterns:
+                            matches = re.finditer(pattern, content, re.IGNORECASE)
+                            for match in matches:
+                                line_no = content[:match.start()].count('\n') + 1
+                                
+                                findings.append({
+                                    "tool": "nodejs-security-scanner",
+                                    "rule_id": rule_id,
+                                    "title": title,
+                                    "severity": severity,
+                                    "category": "Node.js Security",
+                                    "file_path": file_path.replace(repo_path + "/", ""),
+                                    "line_number": line_no,
+                                    "code_snippet": lines[line_no-1].strip() if line_no <= len(lines) else "",
+                                    "description": f"{title} detected in Node.js application",
+                                    "fix_recommendation": self._get_nodejs_fix(rule_id),
+                                    "confidence": "HIGH"
+                                })
+                    except:
+                        pass
+        
+        print(f"   - Scanned {nodejs_files} Node.js files, found {len(findings)} security issues")
+        return findings
+    
+    def _get_nodejs_fix(self, rule_id: str) -> str:
+        """Get Node.js security fix recommendations"""
+        fixes = {
+            "NODEJS_PATH_TRAVERSAL_REQ": "Validate and sanitize file paths. Use path.resolve() and check if result is within allowed directory.",
+            "NODEJS_PATH_TRAVERSAL_JOIN": "Use path.resolve() to normalize paths and validate against allowlist of allowed directories.",
+            "NODEJS_CMD_INJECTION_REQ": "Use child_process.spawn() with argument array. Never pass user input directly to exec().",
+            "NODEJS_CMD_INJECTION_SPAWN": "Validate command arguments against allowlist. Use only trusted commands.",
+            "NODEJS_CMD_INJECTION_SYNC": "Avoid execSync() with user input. Use spawn() with validated arguments instead.",
+            "NODEJS_SQL_INJECTION": "Use parameterized queries or prepared statements. Never concatenate user input into SQL.",
+            "NODEJS_SQL_CONCAT": "Replace string concatenation with parameterized queries using ? placeholders.",
+            "NODEJS_REGEX_DOS": "Validate regex patterns. Use safe regex libraries or implement timeout for regex operations.",
+            "NODEJS_WEAK_RANDOM_CRED": "Use crypto.randomBytes() or crypto.randomUUID() for cryptographic randomness.",
+            "NODEJS_HARDCODED_PROD_PASS": "Store production credentials in environment variables or secure vault.",
+            "NODEJS_MONGODB_CREDS": "Use environment variables for database credentials. Never hardcode in connection strings.",
+            "NODEJS_XPOWEREDBY": "Remove X-Powered-By header: app.disable('x-powered-by') or use helmet.hidePoweredBy().",
+            "NODEJS_WEAK_SESSION_SECRET": "Use strong, randomly generated session secrets (32+ characters). Store in environment variables.",
+            "NODEJS_INSECURE_SESSION": "Set secure: true for HTTPS, httpOnly: true, and sameSite: 'strict' for session cookies.",
+            "NODEJS_CORS_WILDCARD": "Configure CORS with specific allowed origins instead of wildcard (*).",
+            "NODEJS_CORS_ANY_ORIGIN": "Set specific allowed origins in CORS configuration. Avoid origin: true.",
+            "NODEJS_UPLOAD_PATH_INJECTION": "Validate upload paths. Use multer with fixed destination and filename validation.",
+            "NODEJS_ARBITRARY_FILE_WRITE": "Validate file paths and names. Use allowlists for allowed directories and file types.",
+            "NODEJS_TEMPLATE_INJECTION": "Sanitize template variables. Use template engines with automatic escaping enabled.",
+            "NODEJS_JSON_PARSE_UNSAFE": "Validate JSON structure before parsing. Consider using schema validation libraries.",
+            "NODEJS_OBJECT_ASSIGN_POLLUTION": "Validate object properties. Use Object.create(null) for prototype-less objects.",
+            "NODEJS_XXE_XML2JS": "Configure xml2js with secure options: {explicitArray: false, ignoreAttrs: false, trim: true}.",
+            "NODEJS_NOSQL_INJECTION": "Validate query parameters. Use schema validation for MongoDB queries.",
+            "NODEJS_DYNAMIC_REQUIRE": "Never use require() with user input. Use allowlists for module names if dynamic loading needed.",
+            "NODEJS_CONSOLE_LOG_SECRETS": "Remove console.log statements with sensitive data. Use proper logging libraries.",
+            "NODEJS_STACK_TRACE_EXPOSURE": "Handle errors gracefully without exposing stack traces to users in production."
+        }
+        
+        return fixes.get(rule_id, "Follow Node.js security best practices: validate input, use secure APIs, implement proper error handling.")
+    
+    def _scan_iac_security(self, repo_path: str) -> List[Dict[str, Any]]:
+        """Scan Infrastructure as Code files for security misconfigurations"""
+        findings = []
+        
+        # IaC security patterns for multiple formats
+        iac_patterns = {
+            # Terraform patterns
+            'terraform': [
+                (r'ingress\s*{[^}]*from_port\s*=\s*0[^}]*to_port\s*=\s*65535', "TERRAFORM_OPEN_SECURITY_GROUP", "critical", "Security group allows all traffic"),
+                (r'source_cidr_blocks\s*=\s*\["0\.0\.0\.0/0"\]', "TERRAFORM_OPEN_CIDR", "high", "Security group open to internet"),
+                (r'encrypted\s*=\s*false', "TERRAFORM_UNENCRYPTED_STORAGE", "high", "Unencrypted storage detected"),
+                (r'enable_logging\s*=\s*false', "TERRAFORM_LOGGING_DISABLED", "medium", "Logging disabled"),
+                (r'versioning\s*{[^}]*enabled\s*=\s*false', "TERRAFORM_VERSIONING_DISABLED", "medium", "S3 versioning disabled"),
+                (r'public_read_access_prevention\s*=\s*false', "TERRAFORM_PUBLIC_READ_ACCESS", "high", "Public read access allowed"),
+                (r'force_destroy\s*=\s*true', "TERRAFORM_FORCE_DESTROY", "medium", "Force destroy enabled"),
+                (r'skip_final_snapshot\s*=\s*true', "TERRAFORM_SKIP_SNAPSHOT", "medium", "Database final snapshot skipped"),
+                (r'deletion_protection\s*=\s*false', "TERRAFORM_NO_DELETION_PROTECTION", "medium", "Deletion protection disabled")
+            ],
+            
+            # CloudFormation patterns
+            'cloudformation': [
+                (r'CidrIp:\s*0\.0\.0\.0/0', "CF_OPEN_CIDR", "high", "CloudFormation security group open to internet"),
+                (r'Encrypted:\s*false', "CF_UNENCRYPTED", "high", "CloudFormation resource not encrypted"),
+                (r'PublicReadAccess:\s*Allow', "CF_PUBLIC_READ", "high", "CloudFormation public read access"),
+                (r'EnableLogging:\s*false', "CF_LOGGING_DISABLED", "medium", "CloudFormation logging disabled")
+            ],
+            
+            # Kubernetes patterns
+            'kubernetes': [
+                (r'privileged:\s*true', "K8S_PRIVILEGED_CONTAINER", "critical", "Privileged container detected"),
+                (r'runAsRoot:\s*true', "K8S_RUN_AS_ROOT", "high", "Container running as root"),
+                (r'allowPrivilegeEscalation:\s*true', "K8S_PRIVILEGE_ESCALATION", "high", "Privilege escalation allowed"),
+                (r'hostNetwork:\s*true', "K8S_HOST_NETWORK", "high", "Host network access enabled"),
+                (r'hostPID:\s*true', "K8S_HOST_PID", "high", "Host PID namespace access"),
+                (r'type:\s*NodePort', "K8S_NODEPORT_SERVICE", "medium", "NodePort service exposes container"),
+                (r'automountServiceAccountToken:\s*true', "K8S_AUTOMOUNT_TOKEN", "medium", "Service account token auto-mounted")
+            ],
+            
+            # Docker patterns  
+            'docker': [
+                (r'FROM.*:latest', "DOCKER_LATEST_TAG", "medium", "Docker image uses latest tag"),
+                (r'USER\s+root', "DOCKER_USER_ROOT", "high", "Docker container runs as root"),
+                (r'--privileged', "DOCKER_PRIVILEGED_FLAG", "critical", "Docker privileged mode enabled"),
+                (r'ADD\s+http', "DOCKER_ADD_HTTP", "medium", "Docker ADD instruction with HTTP URL"),
+                (r'WORKDIR\s+/', "DOCKER_WORKDIR_ROOT", "low", "Docker WORKDIR set to root directory")
+            ],
+            
+            # Azure ARM patterns
+            'azure': [
+                (r'"allowBlobPublicAccess":\s*true', "AZURE_BLOB_PUBLIC_ACCESS", "high", "Azure blob public access enabled"),
+                (r'"supportsHttpsTrafficOnly":\s*false', "AZURE_HTTP_TRAFFIC", "high", "Azure storage allows HTTP traffic"),
+                (r'"enabledForDiskEncryption":\s*false', "AZURE_DISK_ENCRYPTION_DISABLED", "high", "Azure disk encryption disabled")
+            ]
+        }
+        
+        iac_files_scanned = 0
+        for root, dirs, files in os.walk(repo_path):
+            if '.git' in dirs:
+                dirs.remove('.git')
+            
+            for file in files:
+                file_lower = file.lower()
+                iac_type = None
+                
+                # Determine IaC type
+                if file_lower.endswith(('.tf', '.tfvars')):
+                    iac_type = 'terraform'
+                elif file_lower.endswith(('.yaml', '.yml')) and ('k8s' in file_lower or 'kubernetes' in file_lower or 'deployment' in file_lower):
+                    iac_type = 'kubernetes'
+                elif file_lower == 'dockerfile' or file_lower.startswith('dockerfile.'):
+                    iac_type = 'docker'
+                elif file_lower.endswith(('.json', '.yaml', '.yml')) and ('template' in file_lower or 'cloudformation' in file_lower):
+                    if 'azure' in file_lower or 'arm' in file_lower:
+                        iac_type = 'azure'
+                    else:
+                        iac_type = 'cloudformation'
+                
+                if iac_type and iac_type in iac_patterns:
+                    file_path = os.path.join(root, file)
+                    iac_files_scanned += 1
+                    
+                    try:
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            content = f.read()
+                            lines = content.split('\n')
+                        
+                        for pattern, rule_id, severity, title in iac_patterns[iac_type]:
+                            matches = re.finditer(pattern, content, re.IGNORECASE)
+                            for match in matches:
+                                line_no = content[:match.start()].count('\n') + 1
+                                
+                                findings.append({
+                                    "tool": "iac-security-scanner",
+                                    "rule_id": rule_id,
+                                    "title": title,
+                                    "severity": severity,
+                                    "category": f"{iac_type.title()} Security",
+                                    "file_path": file_path.replace(repo_path + "/", ""),
+                                    "line_number": line_no,
+                                    "code_snippet": lines[line_no-1].strip() if line_no <= len(lines) else "",
+                                    "description": f"{title} in {iac_type} configuration",
+                                    "fix_recommendation": self._get_iac_fix(rule_id),
+                                    "iac_type": iac_type,
+                                    "confidence": "HIGH"
+                                })
+                    except:
+                        pass
+        
+        print(f"   - Scanned {iac_files_scanned} IaC files, found {len(findings)} misconfigurations")
+        return findings
+    
+    def _get_iac_fix(self, rule_id: str) -> str:
+        """Get Infrastructure as Code security fix recommendations"""
+        fixes = {
+            # Terraform fixes
+            "TERRAFORM_OPEN_SECURITY_GROUP": "Restrict security group rules to specific ports and IP ranges. Avoid 0.0.0.0/0 for ingress.",
+            "TERRAFORM_OPEN_CIDR": "Replace 0.0.0.0/0 with specific IP ranges or security group references for better security.",
+            "TERRAFORM_UNENCRYPTED_STORAGE": "Enable encryption at rest: set encrypted = true for all storage resources.",
+            "TERRAFORM_LOGGING_DISABLED": "Enable logging: set enable_logging = true to monitor access and changes.",
+            "TERRAFORM_VERSIONING_DISABLED": "Enable S3 versioning: set versioning { enabled = true } for data protection.",
+            "TERRAFORM_PUBLIC_READ_ACCESS": "Disable public read access: set public_read_access_prevention = true.",
+            "TERRAFORM_FORCE_DESTROY": "Set force_destroy = false to prevent accidental data loss.",
+            "TERRAFORM_SKIP_SNAPSHOT": "Set skip_final_snapshot = false to create final snapshot before deletion.",
+            "TERRAFORM_NO_DELETION_PROTECTION": "Enable deletion protection: set deletion_protection = true for critical resources.",
+            
+            # CloudFormation fixes
+            "CF_OPEN_CIDR": "Replace 0.0.0.0/0 with specific IP ranges in CloudFormation security group rules.",
+            "CF_UNENCRYPTED": "Set Encrypted: true for all storage and database resources in CloudFormation.",
+            "CF_PUBLIC_READ": "Set PublicReadAccess: Deny to prevent unauthorized access to S3 buckets.",
+            "CF_LOGGING_DISABLED": "Set EnableLogging: true to enable CloudTrail and other logging services.",
+            
+            # Kubernetes fixes
+            "K8S_PRIVILEGED_CONTAINER": "Set privileged: false in container security context. Use specific capabilities instead.",
+            "K8S_RUN_AS_ROOT": "Set runAsNonRoot: true and specify runAsUser with non-root UID in security context.",
+            "K8S_PRIVILEGE_ESCALATION": "Set allowPrivilegeEscalation: false in container security context.",
+            "K8S_HOST_NETWORK": "Set hostNetwork: false unless absolutely necessary for pod functionality.",
+            "K8S_HOST_PID": "Set hostPID: false to prevent access to host process namespace.",
+            "K8S_NODEPORT_SERVICE": "Use ClusterIP or LoadBalancer instead of NodePort for better security.",
+            "K8S_AUTOMOUNT_TOKEN": "Set automountServiceAccountToken: false if service account token not needed.",
+            
+            # Docker fixes
+            "DOCKER_LATEST_TAG": "Use specific version tags instead of 'latest' for reproducible builds.",
+            "DOCKER_USER_ROOT": "Create and use non-root user: RUN useradd -m myuser && USER myuser.",
+            "DOCKER_PRIVILEGED_FLAG": "Remove --privileged flag. Use specific capabilities with --cap-add if needed.",
+            "DOCKER_ADD_HTTP": "Use COPY instead of ADD for local files. For URLs, download and verify checksums.",
+            "DOCKER_WORKDIR_ROOT": "Set WORKDIR to specific application directory, not root (/).",
+            
+            # Azure fixes
+            "AZURE_BLOB_PUBLIC_ACCESS": "Set allowBlobPublicAccess to false to prevent public blob access.",
+            "AZURE_HTTP_TRAFFIC": "Set supportsHttpsTrafficOnly to true to enforce HTTPS-only traffic.",
+            "AZURE_DISK_ENCRYPTION_DISABLED": "Set enabledForDiskEncryption to true to enable Azure disk encryption."
+        }
+        
+        return fixes.get(rule_id, "Follow infrastructure security best practices: least privilege, encryption, logging, monitoring.")
     
     def _generate_error_report(self, error: str) -> Dict[str, Any]:
         """Generate error report when scan fails"""
