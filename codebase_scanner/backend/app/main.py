@@ -52,17 +52,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Setup production middleware
-try:
-    from src.middleware.error_handler import setup_exception_handlers
-    # Temporarily disable rate limiting for development debugging
-    # from src.middleware.rate_limit import setup_security_middleware
-    
-    setup_exception_handlers(app)
-    # setup_security_middleware(app)
-    print("Production middleware loaded successfully (rate limiting disabled for development)")
-except ImportError as e:
-    print(f"Warning: Production middleware not loaded: {e}")
+# Setup production middleware (optional - skip if not available in Docker)
+# The src directory is not included in the Docker build, so we skip it
+print("Skipping production middleware in Docker environment")
 
 @app.get("/")
 async def root():

@@ -65,6 +65,9 @@ RUN curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.0/gi
 
 # Copy application code
 COPY app /app/app
+COPY src /app/src
+COPY all_tools_scanner.py /app/all_tools_scanner.py
+COPY production_scanner.py /app/production_scanner.py
 COPY .env.example /app/.env.example
 COPY gunicorn.conf.py /app/gunicorn.conf.py
 
