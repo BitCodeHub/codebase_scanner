@@ -710,6 +710,18 @@ async def scan_comprehensive(request: dict):
         if "error" in scan_result:
             return scan_result
         
+        # If no findings, use simple scanner as fallback
+        if scan_result.get("total_findings", 0) == 0:
+            print("⚠️  No findings from comprehensive scan, trying simple scanner")
+            from app.simple_scanner import SimpleSecurityScanner
+            simple_scanner = SimpleSecurityScanner()
+            simple_result = simple_scanner.scan_repository(repository_url, branch)
+            
+            # Use simple scanner findings
+            scan_result["total_findings"] = simple_result["total_findings"]
+            scan_result["findings_by_severity"] = simple_result["findings_by_severity"]
+            scan_result["all_findings"] = simple_result["findings"]
+        
         # Store in database
         try:
             from src.database import get_supabase_client
@@ -1477,6 +1489,30 @@ Format your response as JSON with these exact keys:
         return {"error": f"Failed to parse AI response: {str(e)}"}
     except Exception as e:
         return {"error": f"AI analysis failed: {str(e)}"}
+
+@app.post("/api/test/comprehensive-scanner")
+async def test_comprehensive_scanner():
+    """Test the comprehensive scanner directly"""
+    try:
+        from app.comprehensive_scanner import ComprehensiveSecurityScanner
+        
+        # Test with a known vulnerable repository
+        scanner = ComprehensiveSecurityScanner()
+        result = scanner.scan_repository("https://github.com/OWASP/NodeGoat", "master")
+        
+        return {
+            "success": True,
+            "total_findings": result.get("total_findings", 0),
+            "findings_by_severity": result.get("findings_by_severity", {}),
+            "tools_results": result.get("detailed_results", {}),
+            "sample_findings": result.get("all_findings", [])[:5]  # First 5 findings
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
 
 @app.post("/api/test/ai-analysis")
 async def test_ai_analysis():

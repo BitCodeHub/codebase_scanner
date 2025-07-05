@@ -177,6 +177,16 @@ class ComprehensiveSecurityScanner:
     def _run_tool(self, tool_id: str, tool_config: Dict, repo_path: str) -> Dict[str, Any]:
         """Run a specific security tool"""
         
+        # Check if tool is available first
+        tool_check = subprocess.run(
+            ["which", tool_id.replace("_", "-")],
+            capture_output=True,
+            text=True
+        )
+        
+        if tool_check.returncode != 0 and tool_id not in ["eslint_security", "detect_secrets"]:
+            return {"status": "not_installed", "message": f"{tool_config['name']} is not installed"}
+        
         # Special handling for each tool
         if tool_id == "semgrep":
             return self._run_semgrep(repo_path)

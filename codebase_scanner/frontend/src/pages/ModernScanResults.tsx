@@ -116,20 +116,30 @@ export default function ModernScanResults() {
       }
 
       setScan(scanData as Scan)
+      console.log('Loaded scan data:', scanData)
 
       // Load scan results
       const { getSupabase } = await import('../lib/supabase-safe')
       const supabase = await getSupabase()
+      console.log('Loading scan results for scan_id:', parseInt(id))
+      
       const { data: resultsData, error: resultsError } = await supabase
         .from('scan_results')
         .select('*')
-        .eq('scan_id', id)
-        .order('severity', { ascending: false })
+        .eq('scan_id', parseInt(id))
 
       if (resultsError) {
         console.error('Error loading scan results:', resultsError)
       } else {
-        setResults(resultsData || [])
+        console.log('Loaded scan results:', resultsData)
+        // Sort results by severity on client side
+        const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 }
+        const sortedResults = (resultsData || []).sort((a, b) => {
+          const aSeverity = severityOrder[a.severity] ?? 4
+          const bSeverity = severityOrder[b.severity] ?? 4
+          return aSeverity - bSeverity
+        })
+        setResults(sortedResults)
       }
 
       // Auto-refresh for running scans
