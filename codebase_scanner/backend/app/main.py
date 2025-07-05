@@ -681,6 +681,38 @@ async def scan_repository_simple(request: dict):
     except Exception as e:
         return {"error": f"Failed to start repository scan: {str(e)}"}
 
+def get_fix_recommendation(rule_id: str) -> str:
+    """Get fix recommendation based on rule ID"""
+    recommendations = {
+        "API_KEY": "Store API keys in environment variables and use a secrets management system",
+        "TOKEN": "Store tokens securely in environment variables, never hardcode them",
+        "SECRET_KEY": "Use environment variables or secure key management services",
+        "AWS_ACCESS_KEY": "Use AWS IAM roles or store credentials in AWS Secrets Manager",
+        "AWS_SECRET": "Never commit AWS credentials. Use IAM roles or environment variables",
+        "PRIVATE_KEY": "Private keys should never be committed. Use secure key storage",
+        "SQL_INJECTION": "Use parameterized queries or prepared statements to prevent SQL injection",
+        "XSS_RISK": "Sanitize user input and use safe rendering methods to prevent XSS",
+        "EVAL_USAGE": "Avoid using eval(). Use safer alternatives like JSON.parse() for JSON data",
+        "WEAK_CRYPTO": "Use strong cryptographic algorithms like SHA-256 or better",
+        "DEBUG_ENABLED": "Disable debug mode in production environments",
+        "SSL_VERIFY_DISABLED": "Always verify SSL certificates in production",
+        "CSRF_DISABLED": "Enable CSRF protection for all state-changing operations",
+        "CORS_WILDCARD": "Configure CORS to allow only trusted origins",
+        "MONGODB_URL": "Store database URLs in environment variables with proper access controls",
+        "POSTGRES_URL": "Use environment variables for database connection strings",
+        "MYSQL_URL": "Store database credentials securely, not in source code",
+        "INSECURE_URL": "Use HTTPS instead of HTTP for all external communications",
+        "BIND_ALL": "Bind to specific interfaces instead of 0.0.0.0 in production"
+    }
+    
+    # Check for partial matches
+    for key, recommendation in recommendations.items():
+        if key.lower() in rule_id.lower():
+            return recommendation
+    
+    # Default recommendation
+    return "Review this security issue and apply appropriate fixes based on security best practices"
+
 @app.post("/api/scans/comprehensive")
 async def scan_comprehensive(request: dict):
     """Run all 15 security tools for comprehensive analysis"""
@@ -703,24 +735,15 @@ async def scan_comprehensive(request: dict):
         print(f"Repository: {repository_url}")
         print(f"Running all 15 security tools...")
         
-        # Initialize scanner and run comprehensive scan
-        scanner = ComprehensiveSecurityScanner()
+        # Use enhanced scanner for thorough analysis
+        from app.enhanced_scanner import EnhancedSecurityScanner
+        scanner = EnhancedSecurityScanner()
         scan_result = scanner.scan_repository(repository_url, branch)
         
         if "error" in scan_result:
             return scan_result
         
-        # If no findings, use simple scanner as fallback
-        if scan_result.get("total_findings", 0) == 0:
-            print("⚠️  No findings from comprehensive scan, trying simple scanner")
-            from app.simple_scanner import SimpleSecurityScanner
-            simple_scanner = SimpleSecurityScanner()
-            simple_result = simple_scanner.scan_repository(repository_url, branch)
-            
-            # Use simple scanner findings
-            scan_result["total_findings"] = simple_result["total_findings"]
-            scan_result["findings_by_severity"] = simple_result["findings_by_severity"]
-            scan_result["all_findings"] = simple_result["findings"]
+        print(f"\n📊 Scan completed with {scan_result.get('total_findings', 0)} findings")
         
         # Store in database
         try:
@@ -743,9 +766,10 @@ async def scan_comprehensive(request: dict):
                 "created_at": datetime.utcnow().isoformat(),
                 "completed_at": datetime.utcnow().isoformat(),
                 "scan_config": {
-                    "tools_used": list(scanner.tools.keys()),
+                    "tools_used": ["semgrep", "gitleaks", "trufflehog", "detect-secrets", "bandit", "safety", "npm-audit", "retire.js", "eslint-security", "pattern-scanner"],
                     "repository_url": repository_url,
-                    "comprehensive_scan": True
+                    "comprehensive_scan": True,
+                    "files_scanned": scan_result.get("files_scanned", 0)
                 }
             }
             
@@ -755,30 +779,39 @@ async def scan_comprehensive(request: dict):
                 actual_scan_id = scan_response.data[0]["id"]
                 print(f"✅ Scan created with ID: {actual_scan_id}")
                 
-                # Store detailed findings
+                # Store detailed findings (limit to 500 to avoid database overload)
                 if scan_result["all_findings"]:
                     scan_results_data = []
-                    for finding in scan_result["all_findings"]:
+                    findings_to_store = scan_result["all_findings"][:500]  # Limit to 500 findings
+                    
+                    for finding in findings_to_store:
                         result_data = {
                             "scan_id": actual_scan_id,
                             "analyzer": finding.get("tool", "unknown"),
                             "rule_id": finding.get("rule_id", ""),
                             "severity": finding.get("severity", "medium"),
-                            "title": finding.get("title", "Security Finding"),
-                            "description": finding.get("description", ""),
-                            "file_path": finding.get("file_path", ""),
+                            "title": finding.get("title", "Security Finding")[:500],  # Limit title length
+                            "description": finding.get("description", "")[:2000],  # Limit description length
+                            "file_path": finding.get("file_path", "")[:500],
                             "line_number": finding.get("line_number", 0),
-                            "code_snippet": finding.get("code_snippet", ""),
+                            "code_snippet": finding.get("code_snippet", "")[:1000],  # Limit code snippet length
                             "category": "security",
                             "vulnerability_type": "security",
                             "confidence": "high",
-                            "fix_recommendation": "Review and fix this security issue"
+                            "fix_recommendation": get_fix_recommendation(finding.get("rule_id", ""))
                         }
                         scan_results_data.append(result_data)
                     
                     if scan_results_data:
-                        results_response = supabase.table("scan_results").insert(scan_results_data).execute()
+                        # Insert in batches of 50 to avoid timeout
+                        for i in range(0, len(scan_results_data), 50):
+                            batch = scan_results_data[i:i+50]
+                            results_response = supabase.table("scan_results").insert(batch).execute()
+                        
                         print(f"✅ Stored {len(scan_results_data)} findings in database")
+                        
+                        if len(scan_result["all_findings"]) > 500:
+                            print(f"⚠️  Note: Total findings ({len(scan_result['all_findings'])}) exceeded limit. Stored first 500.")
                 
                 return {
                     "id": actual_scan_id,
@@ -1489,6 +1522,37 @@ Format your response as JSON with these exact keys:
         return {"error": f"Failed to parse AI response: {str(e)}"}
     except Exception as e:
         return {"error": f"AI analysis failed: {str(e)}"}
+
+@app.post("/api/test/enhanced-scanner")
+async def test_enhanced_scanner():
+    """Test the enhanced scanner with a specific repository"""
+    try:
+        from app.enhanced_scanner import EnhancedSecurityScanner
+        
+        # Test with the user's repository
+        scanner = EnhancedSecurityScanner()
+        result = scanner.scan_repository("https://github.com/BitCodeHub/ai-chatbot", "main")
+        
+        return {
+            "success": True,
+            "total_findings": result.get("total_findings", 0),
+            "findings_by_severity": result.get("findings_by_severity", {}),
+            "files_scanned": result.get("files_scanned", 0),
+            "tools_results": {
+                tool: {
+                    "status": details.get("status"),
+                    "findings_count": details.get("findings_count", 0)
+                }
+                for tool, details in result.get("detailed_results", {}).items()
+            },
+            "sample_findings": result.get("all_findings", [])[:10]  # First 10 findings
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
 
 @app.post("/api/test/comprehensive-scanner")
 async def test_comprehensive_scanner():
