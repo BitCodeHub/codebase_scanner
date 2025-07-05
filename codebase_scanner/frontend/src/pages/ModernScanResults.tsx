@@ -201,7 +201,7 @@ export default function ModernScanResults() {
       }
 
       // Auto-refresh for running scans only - prevent flickering
-      if (scanData.status === 'running' && !refreshing) {
+      if (scanData.status === 'running') {
         console.log('Scan is running, setting up auto-refresh...')
         const interval = setInterval(() => {
           console.log('Auto-refreshing running scan...')
@@ -209,7 +209,7 @@ export default function ModernScanResults() {
           if (!refreshing) {
             handleRefresh()
           }
-        }, 10000) // Increased to 10 seconds to reduce flickering
+        }, 10000) // 10 seconds to reduce flickering
         return () => clearInterval(interval)
       }
     } catch (error) {
@@ -422,7 +422,16 @@ export default function ModernScanResults() {
           <div className="text-gray-400 text-sm">
             <p>Scan ID: #{scan.id}</p>
             <p>Started: {new Date(scan.created_at).toLocaleString()}</p>
-            <p className="mt-2">Page will auto-refresh when results are ready</p>
+            <p className="mt-2">
+              {refreshing ? (
+                <span className="flex items-center justify-center space-x-2">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Checking for updates...</span>
+                </span>
+              ) : (
+                "Page auto-refreshes every 10 seconds"
+              )}
+            </p>
           </div>
         </div>
       </div>
