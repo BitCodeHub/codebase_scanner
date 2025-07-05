@@ -1259,7 +1259,8 @@ class EnterpriseSecurityScanner:
                                     "line_number": line_no,
                                     "code_snippet": match.group(0)[:100],
                                     "description": f"{title} - Critical security risk",
-                                    "fix_recommendation": self._get_auth_fix(rule_id)
+                                    "fix_recommendation": self._get_auth_fix(rule_id),
+                        "compliance": ["OWASP A07:2021", "CWE-287", "PCI DSS 8.2"]
                                 })
                     except:
                         pass
@@ -1309,7 +1310,8 @@ class EnterpriseSecurityScanner:
                                     "category": "Cryptography",
                                     "file_path": file_path.replace(repo_path + "/", ""),
                                     "description": f"{title} - Weak cryptographic practice",
-                                    "fix_recommendation": self._get_crypto_fix(rule_id)
+                                    "fix_recommendation": self._get_crypto_fix(rule_id),
+                                    "compliance": ["OWASP A02:2021", "CWE-327", "PCI DSS 3.4"]
                                 })
                     except:
                         pass
@@ -1899,18 +1901,44 @@ BUSINESS IMPACT:
             return "3-6 months"
     
     def _get_bandit_fix(self, test_id: str) -> str:
-        """Get Bandit-specific fix recommendations"""
+        """Get Bandit-specific fix recommendations with detailed remediation steps"""
         fixes = {
-            "B201": "Replace eval() with ast.literal_eval() or json.loads()",
-            "B301": "Replace pickle with json for serialization",
-            "B302": "Replace marshal with json for serialization",
-            "B303": "Use hashlib instead of md5 or sha1",
-            "B304": "Use secrets module instead of random for cryptographic purposes",
-            "B305": "Use defusedxml instead of xml modules",
-            "B306": "Replace mktemp with mkstemp for temporary files"
+            "B101": "Remove assert statements from production code. Use proper error handling with try/except blocks and logging instead.",
+            "B102": "Use subprocess module with shell=False and pass arguments as a list to prevent command injection attacks.",
+            "B103": "Set file permissions explicitly using os.chmod() with restrictive permissions (e.g., 0o600 for sensitive files).",
+            "B104": "Bind to specific IP addresses (e.g., '127.0.0.1' for local only) instead of '0.0.0.0' in production environments.",
+            "B105": "Replace hardcoded passwords with environment variables or use a secure key management system like AWS Secrets Manager.",
+            "B106": "Use defusedxml or configure XML parsers with secure defaults to prevent XXE attacks. Set resolve_entities=False.",
+            "B107": "Use parameterized queries or an ORM like SQLAlchemy to prevent SQL injection. Never concatenate user input into queries.",
+            "B108": "Use the tempfile module (tempfile.mkstemp() or tempfile.NamedTemporaryFile()) instead of hardcoded temp paths.",
+            "B110": "Implement specific exception handling instead of bare except. Log exceptions appropriately without exposing sensitive data.",
+            "B201": "Never use eval() or exec(). For JSON data use json.loads(), for literals use ast.literal_eval().",
+            "B301": "Replace pickle with JSON for data serialization. If pickle is required, validate and sign the data.",
+            "B302": "Replace marshal with JSON. Marshal is not secure and can execute arbitrary code.",
+            "B303": "Replace MD5/SHA1 with SHA-256 or SHA-512. For passwords, use bcrypt, scrypt, or Argon2.",
+            "B304": "Use secrets.SystemRandom() or os.urandom() for cryptographic randomness. Never use random module for security.",
+            "B305": "Use defusedxml library for XML parsing. It has secure defaults against XXE and billion laughs attacks.",
+            "B306": "Use tempfile.mkstemp() instead of mktemp(). The latter has race condition vulnerabilities.",
+            "B307": "Replace eval() with ast.literal_eval() for safe evaluation of Python literals only.",
+            "B308": "Use django.utils.safestring.mark_safe() only with thoroughly validated and sanitized input.",
+            "B320": "Configure XML parsers with secure defaults. Disable external entity processing and DTD processing.",
+            "B321": "Always set verify=True for requests. For self-signed certs, provide the certificate bundle.",
+            "B322": "In Python 2, use raw_input() instead of input(). Better yet, upgrade to Python 3.",
+            "B324": "Use SHA-256 or SHA-512 for hashing. MD5 and SHA-1 are cryptographically broken.",
+            "B501": "Set verify=True for all requests. Never set verify=False, even in development.",
+            "B506": "Use yaml.safe_load() instead of yaml.load() to prevent arbitrary code execution.",
+            "B601": "Use subprocess.run() with shell=False and pass args as a list to prevent shell injection.",
+            "B602": "Never use shell=True with user input. Validate input and use shell=False with argument lists.",
+            "B603": "Use full paths to executables and validate all inputs when using subprocess.",
+            "B608": "Use parameterized SQL queries. With Django use the ORM, with raw SQL use parameter placeholders.",
+            "B701": "Ensure Jinja2 autoescape is enabled. Use {% autoescape true %} blocks where needed.",
+            "B703": "Enable Django template autoescape globally. Use |safe filter only with trusted content."
         }
         
-        return fixes.get(test_id, "Review and fix based on security best practices")
+        # Extract base test ID (e.g., "B108" from "B108:hardcoded_tmp")
+        base_id = test_id.split(':')[0] if ':' in test_id else test_id
+        
+        return fixes.get(base_id, "Apply security best practices: validate input, use secure defaults, follow OWASP guidelines.")
     
     def _get_eslint_fix(self, rule_id: str) -> str:
         """Get ESLint-specific fix recommendations"""
@@ -1925,58 +1953,341 @@ BUSINESS IMPACT:
         return fixes.get(rule_id, "Follow JavaScript security best practices")
     
     def _get_auth_fix(self, rule_id: str) -> str:
-        """Get authentication-specific fixes"""
+        """Get authentication-specific fixes with enterprise-grade recommendations"""
         fixes = {
-            "WEAK_AUTH": "Implement strong password policies and multi-factor authentication",
-            "SSL_BYPASS": "Always verify SSL certificates in production",
-            "SESSION_FIXATION": "Regenerate session IDs after authentication",
-            "INSECURE_COOKIE": "Set HttpOnly and Secure flags on all cookies",
-            "WEAK_JWT": "Store JWT secrets in environment variables and rotate regularly",
-            "JWT_NONE": "Never use 'none' algorithm for JWT",
-            "API_KEY": "Use environment variables or secret management service",
-            "EXPOSED_TOKEN": "Remove tokens from code and rotate immediately"
+            "WEAK_AUTH": """CRITICAL - Weak Authentication Detected:
+1. Remove ALL hardcoded passwords immediately
+2. Implement password requirements: min 12 chars, uppercase, lowercase, numbers, symbols
+3. Use bcrypt (cost factor 12+), scrypt, or Argon2 for password hashing
+4. Implement account lockout after 5 failed attempts
+5. Add MFA using TOTP (Google Authenticator) or SMS as backup
+6. Log all authentication attempts for security monitoring
+7. Implement password history to prevent reuse of last 12 passwords""",
+            
+            "SSL_BYPASS": """CRITICAL - SSL Verification Disabled:
+1. Set verify=True for all HTTPS requests in production
+2. For self-signed certificates, provide the CA bundle path
+3. Implement certificate pinning for high-security connections
+4. Monitor certificate expiration and auto-renewal
+5. Use TLS 1.2 minimum, prefer TLS 1.3
+6. Log all SSL/TLS errors for security monitoring""",
+            
+            "SESSION_FIXATION": """HIGH - Session Fixation Vulnerability:
+1. Regenerate session ID on every privilege level change
+2. Invalidate old session immediately after regeneration
+3. Bind sessions to IP address and User-Agent
+4. Set absolute timeout (e.g., 8 hours) and idle timeout (e.g., 30 minutes)
+5. Store sessions in Redis/Memcached, not in cookies
+6. Use framework's built-in session management""",
+            
+            "INSECURE_COOKIE": """HIGH - Insecure Cookie Configuration:
+1. Set HttpOnly=True to prevent XSS access
+2. Set Secure=True for all cookies on HTTPS sites
+3. Set SameSite=Strict for CSRF protection
+4. Use __Secure- or __Host- cookie prefixes
+5. Set minimal Path and specific Domain
+6. Implement cookie encryption for sensitive data
+7. Set appropriate Max-Age (avoid persistent cookies for sessions)""",
+            
+            "WEAK_JWT": """CRITICAL - Weak JWT Configuration:
+1. Generate cryptographically secure secrets (min 256 bits)
+2. Store secrets in AWS Secrets Manager, HashiCorp Vault, or similar
+3. Use RS256 or ES256 instead of HS256 for better security
+4. Set token expiration to 15 minutes for access tokens
+5. Implement refresh token rotation with 7-day expiry
+6. Include and validate: iss, sub, aud, exp, nbf, iat claims
+7. Implement token revocation list for logout""",
+            
+            "JWT_NONE": """CRITICAL - JWT None Algorithm Vulnerability:
+1. NEVER accept 'none' algorithm - this allows token forgery
+2. Explicitly whitelist allowed algorithms: ['RS256', 'ES256']
+3. Verify algorithm in header matches your whitelist
+4. Use libraries that reject 'none' by default
+5. Implement additional token binding (e.g., to IP or device)
+6. Add automated tests to verify 'none' algorithm is rejected""",
+            
+            "API_KEY": """CRITICAL - Hardcoded API Key:
+1. Remove the API key from code IMMEDIATELY
+2. Rotate the exposed key in the service provider
+3. Store keys in environment variables or secret management
+4. Use different keys for dev/staging/production
+5. Implement key rotation every 90 days
+6. Add IP whitelisting and rate limiting
+7. Monitor API key usage for anomalies
+8. Consider OAuth2 for user-specific access""",
+            
+            "EXPOSED_TOKEN": """CRITICAL - Exposed Authentication Token:
+1. Revoke the exposed token IMMEDIATELY
+2. Audit logs for any unauthorized access
+3. Never log tokens - use token IDs for debugging
+4. Implement token encryption at rest
+5. Use secure headers for token transmission
+6. Add token binding to prevent replay attacks
+7. Implement short expiration times
+8. Set up alerts for token exposure patterns"""
         }
         
-        return fixes.get(rule_id, "Implement secure authentication practices")
+        return fixes.get(rule_id, """Implement comprehensive authentication security:
+1. Use established auth frameworks (OAuth2, OpenID Connect)
+2. Implement defense-in-depth with MFA
+3. Use secure session management
+4. Regular security audits of auth mechanisms
+5. Monitor and log all authentication events
+6. Follow OWASP Authentication Cheat Sheet""")
     
     def _get_crypto_fix(self, rule_id: str) -> str:
-        """Get cryptography-specific fixes"""
+        """Get cryptography-specific fixes with detailed implementation guidance"""
         fixes = {
-            "WEAK_HASH": "Use SHA-256 or stronger hashing algorithms",
-            "WEAK_CRYPTO": "Use AES-256 or stronger encryption",
-            "WEAK_RANDOM": "Use cryptographically secure random number generators",
-            "WEAK_CRYPTO_MODE": "Use GCM or CBC mode instead of ECB",
-            "WEAK_KDF": "Use at least 10,000 iterations for key derivation",
-            "WEAK_KEY": "Use keys of at least 256 bits"
+            "WEAK_HASH": """CRITICAL - Weak Hash Algorithm:
+1. Replace MD5/SHA1 immediately:
+   - For general hashing: Use SHA-256 or SHA-512
+   - For passwords: Use bcrypt (cost 12+), scrypt, or Argon2id
+   - For HMAC: Use HMAC-SHA256 minimum
+2. Migrate existing hashes:
+   - Re-hash passwords on next login
+   - Provide migration period for data hashes
+3. Use constant-time comparison to prevent timing attacks
+4. Always use salt (32 bytes) for password hashing
+5. Consider key stretching for sensitive operations""",
+            
+            "WEAK_CRYPTO": """CRITICAL - Weak Encryption Algorithm:
+1. Replace immediately:
+   - DES/3DES → AES-256-GCM
+   - RC4 → ChaCha20-Poly1305 or AES-256-GCM
+   - Blowfish → AES-256 or ChaCha20
+2. Use authenticated encryption (AEAD):
+   - AES-GCM or ChaCha20-Poly1305
+   - Never use ECB mode
+3. Generate unique IV/nonce for each encryption
+4. Use established libraries (OpenSSL, libsodium)
+5. Enable perfect forward secrecy in TLS""",
+            
+            "WEAK_RANDOM": """HIGH - Insecure Random Number Generation:
+1. For cryptographic operations:
+   - Python: Use secrets module or os.urandom()
+   - Java: Use SecureRandom
+   - Node.js: Use crypto.randomBytes()
+2. NEVER use Math.random() or random.random() for security
+3. Ensure at least 256 bits of entropy for keys
+4. Properly seed random generators from OS entropy
+5. Test randomness quality with statistical tests
+6. Use hardware RNG when available""",
+            
+            "WEAK_CRYPTO_MODE": """CRITICAL - Insecure Cipher Mode:
+1. NEVER use ECB mode - it reveals data patterns
+2. Recommended modes:
+   - Authenticated: GCM, CCM, EAX
+   - Non-authenticated: CTR, CBC (with HMAC)
+3. Always use unique IV/nonce:
+   - GCM: 96-bit nonce, never reuse with same key
+   - CBC: Random 128-bit IV
+4. Implement encrypt-then-MAC for non-AEAD modes
+5. Verify authentication tags before decryption
+6. Use proper padding (PKCS#7) for block modes""",
+            
+            "WEAK_KDF": """HIGH - Weak Key Derivation Function:
+1. Use proper KDF parameters:
+   - PBKDF2: 100,000+ iterations (2023 standard)
+   - scrypt: N=32768, r=8, p=1 minimum
+   - Argon2id: memory=64MB, iterations=3, parallelism=4
+2. Use unique salt per password (32+ bytes)
+3. Increase iterations yearly (double every 2 years)
+4. Store KDF parameters with hash for upgrades
+5. Use key stretching for encryption keys from passwords
+6. Consider hardware acceleration impacts""",
+            "WEAK_KEY": """CRITICAL - Weak Encryption Key:
+1. Key size requirements:
+   - Symmetric (AES): 256 bits minimum
+   - RSA: 2048 bits minimum, prefer 4096
+   - ECC: P-256 minimum, prefer P-384
+2. Key generation:
+   - Use cryptographically secure RNG
+   - Never derive keys from passwords without KDF
+   - Generate new keys for each purpose
+3. Key storage:
+   - Use HSM or secure key management (AWS KMS, Vault)
+   - Never hardcode keys in source code
+   - Encrypt keys at rest
+4. Key rotation:
+   - Rotate every 90 days for high-value data
+   - Maintain key versioning for decryption
+   - Automate rotation process
+5. Key separation:
+   - Use different keys for different data types
+   - Separate keys for dev/staging/production"""
         }
         
-        return fixes.get(rule_id, "Follow cryptographic best practices")
+        return fixes.get(rule_id, """Implement cryptographic best practices:
+1. Use AES-256-GCM for symmetric encryption
+2. Use RSA-2048 or ECC-P256 for asymmetric
+3. Implement proper key management lifecycle
+4. Use established crypto libraries only
+5. Get cryptographic implementations audited
+6. Follow NIST guidelines for algorithm selection
+7. Plan for crypto-agility (algorithm updates)""")
     
     def _get_api_fix(self, rule_id: str) -> str:
-        """Get API-specific fixes"""
+        """Get API-specific fixes with detailed implementation steps"""
         fixes = {
-            "NO_RATE_LIMIT": "Implement rate limiting on all API endpoints",
-            "CORS_WILDCARD": "Configure CORS to allow only trusted origins",
-            "NO_API_VERSION": "Implement API versioning for backward compatibility",
-            "GRAPHQL_DEBUG": "Disable debug mode in production",
-            "GRAPHQL_INTROSPECTION": "Disable introspection in production"
+            "NO_RATE_LIMIT": """HIGH - Missing Rate Limiting:
+1. Implement rate limiting:
+   - Per-user: 100 requests/minute for authenticated
+   - Per-IP: 20 requests/minute for anonymous
+   - Per-endpoint: Custom limits for expensive operations
+2. Use distributed rate limiting (Redis)
+3. Return 429 status with Retry-After header
+4. Implement exponential backoff for violations
+5. Add burst allowance for legitimate spikes
+6. Monitor and alert on rate limit violations""",
+            
+            "CORS_WILDCARD": """CRITICAL - CORS Misconfiguration:
+1. Never use Access-Control-Allow-Origin: *
+2. Whitelist specific origins:
+   - Maintain environment-specific lists
+   - Validate Origin header against whitelist
+3. Configure CORS headers:
+   - Access-Control-Allow-Credentials: true (only with specific origins)
+   - Access-Control-Max-Age: 86400
+   - Limit allowed methods and headers
+4. Implement pre-flight request caching
+5. Use CORS libraries with secure defaults""",
+            
+            "NO_API_VERSION": """MEDIUM - Missing API Versioning:
+1. Implement versioning strategy:
+   - URL path: /api/v1/resource
+   - Header: Accept: application/vnd.api+json;version=1
+   - Query param: /api/resource?version=1
+2. Maintain backward compatibility
+3. Deprecation policy:
+   - 6-month notice for breaking changes
+   - Sunset headers in responses
+4. Version documentation separately
+5. Use semantic versioning""",
+            
+            "GRAPHQL_DEBUG": """HIGH - GraphQL Debug Mode Enabled:
+1. Disable debug mode in production immediately
+2. Set production flags:
+   - debug=False
+   - Include stack traces only in development
+3. Implement custom error handling:
+   - Log full errors server-side
+   - Return sanitized errors to clients
+4. Use error tracking service (Sentry)
+5. Monitor for information disclosure""",
+            
+            "GRAPHQL_INTROSPECTION": """MEDIUM - GraphQL Introspection Enabled:
+1. Disable introspection in production:
+   - Set introspection=False
+   - Block __schema and __type queries
+2. Provide schema documentation separately
+3. Implement query depth limiting
+4. Add query complexity analysis
+5. Implement field-level authorization
+6. Monitor for malicious query patterns"""
         }
         
-        return fixes.get(rule_id, "Implement API security best practices")
+        return fixes.get(rule_id, """Implement comprehensive API security:
+1. Authentication & authorization on all endpoints
+2. Input validation and sanitization
+3. Rate limiting and DDoS protection
+4. Audit logging of all API access
+5. API gateway for centralized security
+6. Regular API security testing
+7. Follow OWASP API Security Top 10""")
     
     def _get_cloud_fix(self, rule_id: str) -> str:
-        """Get cloud-specific fixes"""
+        """Get cloud-specific fixes with enterprise cloud security guidance"""
         fixes = {
-            "AWS_ACCESS_KEY": "Use IAM roles instead of hardcoded credentials",
-            "AWS_SECRET": "Store in AWS Secrets Manager or Parameter Store",
-            "S3_PUBLIC": "Review and restrict S3 bucket permissions",
-            "AZURE_KEY": "Use Azure Key Vault for credential storage",
-            "GCP_SERVICE_ACCOUNT": "Use GCP Secret Manager and limit permissions",
-            "OPEN_CIDR": "Restrict CIDR blocks to specific IP ranges",
-            "SECURITY_GROUP": "Use dynamic security group references"
+            "AWS_ACCESS_KEY": """CRITICAL - AWS Access Key Exposed:
+1. IMMEDIATELY rotate the exposed access key
+2. Audit CloudTrail logs for unauthorized usage
+3. Implement IAM best practices:
+   - Use IAM roles for EC2/Lambda/ECS
+   - Use temporary credentials via STS
+   - Never embed credentials in code
+4. Use AWS Secrets Manager or Systems Manager Parameter Store
+5. Enable MFA for all IAM users
+6. Implement least privilege policies
+7. Set up AWS Config rules for compliance""",
+            
+            "AWS_SECRET": """CRITICAL - AWS Secret Exposed:
+1. Rotate the secret key pair immediately
+2. Review CloudTrail for suspicious activity
+3. Store secrets properly:
+   - AWS Secrets Manager with automatic rotation
+   - KMS encryption for secrets at rest
+   - Use IAM roles instead of long-lived credentials
+4. Implement secret scanning in CI/CD
+5. Use aws-vault for local development""",
+            
+            "S3_PUBLIC": """HIGH - S3 Bucket Publicly Accessible:
+1. Remove public access immediately:
+   - Block all public access at bucket level
+   - Review and fix bucket policies
+   - Check ACLs for public grants
+2. Enable S3 Block Public Access at account level
+3. Use CloudFront for static content delivery
+4. Enable S3 access logging
+5. Set up bucket inventory and analytics
+6. Use S3 Object Lock for compliance data
+7. Enable versioning and MFA delete""",
+            
+            "AZURE_KEY": """CRITICAL - Azure Key/Secret Exposed:
+1. Rotate the exposed key immediately
+2. Review Azure Activity Logs
+3. Implement Azure Key Vault:
+   - Store all secrets in Key Vault
+   - Use Managed Identities for Azure resources
+   - Enable soft delete and purge protection
+4. Set up Key Vault access policies
+5. Enable diagnostic logging
+6. Use Azure Policy for compliance""",
+            
+            "GCP_SERVICE_ACCOUNT": """CRITICAL - GCP Service Account Key Exposed:
+1. Revoke the key immediately in IAM console
+2. Audit Cloud Logging for unauthorized use
+3. Best practices:
+   - Use Workload Identity for GKE
+   - Use default service accounts sparingly
+   - Implement key rotation every 90 days
+4. Store keys in Secret Manager
+5. Use IAM conditions for fine-grained access
+6. Enable VPC Service Controls""",
+            
+            "OPEN_CIDR": """HIGH - Overly Permissive Network Access:
+1. Restrict CIDR blocks immediately:
+   - Never use 0.0.0.0/0 for production
+   - Implement least privilege network access
+   - Use specific IP ranges or security groups
+2. Implement defense in depth:
+   - Use WAF for web applications
+   - Deploy IDS/IPS solutions
+   - Enable VPC Flow Logs
+3. Use bastion hosts or VPN for admin access
+4. Implement network segmentation""",
+            
+            "SECURITY_GROUP": """MEDIUM - Security Group Misconfiguration:
+1. Review and restrict security group rules:
+   - Remove permissive inbound rules
+   - Use security group references instead of IPs
+   - Implement least privilege access
+2. Best practices:
+   - Separate security groups by function
+   - Use descriptive names and tags
+   - Regular security group audits
+   - Enable AWS Config rules for compliance
+3. Document all security group rules
+4. Use infrastructure as code for consistency"""
         }
         
-        return fixes.get(rule_id, "Follow cloud security best practices")
+        return fixes.get(rule_id, """Implement cloud security best practices:
+1. Use cloud-native identity services (IAM roles, managed identities)
+2. Enable comprehensive logging and monitoring
+3. Implement defense in depth with multiple security layers
+4. Regular security assessments and compliance audits
+5. Use cloud security posture management (CSPM) tools
+6. Follow CIS benchmarks for your cloud provider
+7. Implement infrastructure as code with security scanning""")
     
     def _generate_error_report(self, error: str) -> Dict[str, Any]:
         """Generate error report when scan fails"""

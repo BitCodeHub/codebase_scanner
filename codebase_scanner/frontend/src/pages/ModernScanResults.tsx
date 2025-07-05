@@ -115,10 +115,13 @@ export default function ModernScanResults() {
   }, [results])
 
   const loadScanData = async () => {
-    if (!id) return
+    if (!id || refreshing) return // Prevent duplicate loads
 
     try {
-      setLoading(true)
+      // Only show loading spinner on initial load, not on refresh
+      if (!scan) {
+        setLoading(true)
+      }
       console.log(`Loading scan data for ID: ${id}`)
       
       // Load scan details
@@ -197,33 +200,17 @@ export default function ModernScanResults() {
         setResults(sortedResults)
       }
 
-      // Auto-refresh for running scans or recently created scans
-      if (scanData.status === 'running') {
+      // Auto-refresh for running scans only - prevent flickering
+      if (scanData.status === 'running' && !refreshing) {
         console.log('Scan is running, setting up auto-refresh...')
         const interval = setInterval(() => {
           console.log('Auto-refreshing running scan...')
-          loadScanData()
-        }, 5000)
+          // Only refresh if not already refreshing to prevent overlap
+          if (!refreshing) {
+            handleRefresh()
+          }
+        }, 10000) // Increased to 10 seconds to reduce flickering
         return () => clearInterval(interval)
-      }
-      
-      // If scan was created in the last 30 seconds, poll for results
-      const scanCreatedAt = new Date(scanData.created_at).getTime()
-      const now = new Date().getTime()
-      const ageInSeconds = (now - scanCreatedAt) / 1000
-      
-      if (ageInSeconds < 30 && results.length === 0) {
-        console.log('Scan is fresh, polling for results...')
-        const pollInterval = setInterval(() => {
-          loadScanData()
-        }, 2000)
-        
-        // Stop polling after 30 seconds
-        setTimeout(() => {
-          clearInterval(pollInterval)
-        }, 30000)
-        
-        return () => clearInterval(pollInterval)
       }
     } catch (error) {
       console.error('Error in loadScanData:', error)
@@ -233,9 +220,13 @@ export default function ModernScanResults() {
   }
 
   const handleRefresh = async () => {
+    if (refreshing) return // Prevent multiple refreshes
     setRefreshing(true)
-    await loadScanData()
-    setRefreshing(false)
+    try {
+      await loadScanData()
+    } finally {
+      setRefreshing(false)
+    }
   }
 
   const toggleResult = (resultId: string) => {
