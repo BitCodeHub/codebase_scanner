@@ -82,10 +82,18 @@ export default function ModernScanResults() {
   const [searchQuery, setSearchQuery] = useState('')
   const [refreshing, setRefreshing] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
+  const [retryTimer, setRetryTimer] = useState<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (id) {
       loadScanData()
+    }
+    
+    // Cleanup function to clear any pending retry timers
+    return () => {
+      if (retryTimer) {
+        clearTimeout(retryTimer)
+      }
     }
   }, [id])
 
@@ -108,13 +116,26 @@ export default function ModernScanResults() {
       if (scanError || !scanData) {
         console.error('Error loading scan:', scanError)
         
-        // Retry up to 3 times with exponential backoff
-        if (retryCount < 3) {
+        // Check if this is a permanent error (scan doesn't exist)
+        const isNotFound = scanError?.message?.includes('not found') || 
+                          scanError?.code === 'PGRST116' || // Supabase not found error
+                          scanError?.status === 404
+        
+        if (isNotFound) {
+          console.log('Scan definitively not found, stopping retries')
+          setScan(null)
+          setLoading(false)
+          return
+        }
+        
+        // Only retry for temporary errors (network issues, etc)
+        if (retryCount < 3 && !isNotFound) {
           console.log(`Retrying scan load (attempt ${retryCount + 1}/3)...`)
           setRetryCount(prev => prev + 1)
-          setTimeout(() => {
+          const timer = setTimeout(() => {
             loadScanData()
           }, (retryCount + 1) * 1000) // 1s, 2s, 3s delays
+          setRetryTimer(timer)
           return
         }
         
@@ -131,8 +152,12 @@ export default function ModernScanResults() {
         }
       }
 
-      // Reset retry count on successful load
+      // Reset retry count and clear any pending timers on successful load
       setRetryCount(0)
+      if (retryTimer) {
+        clearTimeout(retryTimer)
+        setRetryTimer(null)
+      }
       
       setScan(scanData as Scan)
       console.log('Loaded scan data:', scanData)
@@ -320,6 +345,11 @@ export default function ModernScanResults() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={() => {
+                // Clear any pending retry timers
+                if (retryTimer) {
+                  clearTimeout(retryTimer)
+                  setRetryTimer(null)
+                }
                 setRetryCount(0)
                 setScan(null)
                 setResults([])
