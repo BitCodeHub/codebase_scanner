@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { db } from '../lib/supabase-proxy'
+import { db, auth } from '../lib/supabase-proxy'
 import { 
   Plus, 
   Shield,
@@ -128,7 +128,7 @@ export default function ModernProjectsPage() {
       const project = projects.find(p => p.id === projectId)
       if (!project) throw new Error('Project not found')
 
-      const { data: { user } } = await db.auth.getUser()
+      const { data: { user } } = await auth.getUser()
       if (!user) throw new Error('No user found')
 
       const repositoryUrl = project.repository_url || 'https://github.com/OWASP/NodeGoat'

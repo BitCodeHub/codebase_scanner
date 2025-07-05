@@ -118,7 +118,8 @@ export default function ModernScanResults() {
       setScan(scanData as Scan)
 
       // Load scan results
-      const supabase = await db.scans.list() // Get the client
+      const { getSupabase } = await import('../lib/supabase-safe')
+      const supabase = await getSupabase()
       const { data: resultsData, error: resultsError } = await supabase
         .from('scan_results')
         .select('*')
