@@ -27,9 +27,11 @@ import {
   Loader2,
   ExternalLink,
   Terminal,
-  Zap
+  Zap,
+  FileText
 } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
+import EnterpriseSecurityReport from '../components/EnterpriseSecurityReport'
 import Prism from 'prismjs'
 import 'prismjs/themes/prism-tomorrow.css'
 import 'prismjs/components/prism-javascript'
@@ -97,6 +99,7 @@ export default function ModernScanResults() {
   const [retryTimer, setRetryTimer] = useState<NodeJS.Timeout | null>(null)
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [viewMode, setViewMode] = useState<'details' | 'enterprise'>('details')
 
   useEffect(() => {
     if (id) {
@@ -924,8 +927,46 @@ export default function ModernScanResults() {
           )}
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        {/* View Mode Toggle */}
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-white">Security Findings</h3>
+          <div className="flex items-center space-x-2 bg-gray-800/50 p-1 rounded-lg">
+            <button
+              onClick={() => setViewMode('details')}
+              className={`px-4 py-2 rounded-md transition-all ${
+                viewMode === 'details'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Bug className="w-4 h-4" />
+                <span>Detailed Findings</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setViewMode('enterprise')}
+              className={`px-4 py-2 rounded-md transition-all ${
+                viewMode === 'enterprise'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <FileText className="w-4 h-4" />
+                <span>Enterprise Report</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Conditional Rendering based on view mode */}
+        {viewMode === 'enterprise' ? (
+          <EnterpriseSecurityReport scan={scan} results={results} />
+        ) : (
+          <>
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="flex-1 relative">
             <input
               type="text"
@@ -1126,6 +1167,8 @@ export default function ModernScanResults() {
               </button>
             )}
           </div>
+        )}
+          </>
         )}
       </main>
 
