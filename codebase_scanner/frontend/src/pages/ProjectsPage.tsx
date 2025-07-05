@@ -110,7 +110,7 @@ export default function ProjectsPage() {
       
       console.log('Starting repository scan for:', repositoryUrl)
       
-      const response = await fetch(getFullApiUrl('/api/scans/repository-simple'), {
+      const response = await fetch(getFullApiUrl('/api/scans/quick-production'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -137,7 +137,7 @@ export default function ProjectsPage() {
       console.log('Real scan initiated:', scanResult)
 
       // Real scanning is now handled by the backend automatically
-      console.log('Backend will process the real security scan using Semgrep, Bandit, Safety, and Gitleaks')
+      console.log('Backend will process the security scan using 15 production-ready tools')
       
       // Refresh project list to show scan in progress
       setTimeout(() => {
