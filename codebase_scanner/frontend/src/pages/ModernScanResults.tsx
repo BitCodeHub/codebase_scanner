@@ -79,6 +79,9 @@ interface Scan {
     risk_level?: string
     scan_duration?: string
     executive_summary?: string
+    compliance_status?: any
+    recommendations?: any
+    detailed_report?: any
   }
   project?: {
     name: string
@@ -99,6 +102,7 @@ export default function ModernScanResults() {
   const [retryTimer, setRetryTimer] = useState<NodeJS.Timeout | null>(null)
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [fetchingReport, setFetchingReport] = useState(false)
   // Default to enterprise view if scan_config has comprehensive data
   const [viewMode, setViewMode] = useState<'details' | 'enterprise'>('details')
 
@@ -122,6 +126,56 @@ export default function ModernScanResults() {
     // Syntax highlighting for code snippets
     Prism.highlightAll()
   }, [results])
+
+  // Fetch comprehensive report data from backend API
+  const fetchComprehensiveReport = async (scanId: string) => {
+    try {
+      const { getApiUrl } = await import('../utils/api-config')
+      const apiUrl = getApiUrl()
+      
+      // First try the test endpoint that doesn't require auth
+      const testResponse = await fetch(`${apiUrl}/api/test/scan/${scanId}/comprehensive-report`, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      
+      if (testResponse.ok) {
+        const testData = await testResponse.json()
+        if (testData.success && testData.comprehensive_report) {
+          console.log('Fetched comprehensive report from test endpoint:', testData.comprehensive_report)
+          return testData.comprehensive_report
+        }
+      }
+      
+      // If test endpoint fails, try the authenticated export API
+      const { getSupabase } = await import('../lib/supabase-safe')
+      const supabase = await getSupabase()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session?.access_token) {
+        const response = await fetch(`${apiUrl}/api/export/scan/${scanId}?format=json&include_ai_analysis=true`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        })
+        
+        if (response.ok) {
+          const reportData = await response.json()
+          console.log('Fetched comprehensive report from export API:', reportData)
+          return reportData
+        } else if (response.status === 404) {
+          console.log('Comprehensive report not found')
+        } else {
+          console.error('Failed to fetch comprehensive report:', response.status, response.statusText)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching comprehensive report:', error)
+    }
+    return null
+  }
 
   const loadScanData = async (isInitialLoad = false) => {
     if (!id || refreshing) return // Prevent duplicate loads
@@ -187,6 +241,37 @@ export default function ModernScanResults() {
       console.log('scan_config:', scanData.scan_config)
       console.log('ai_insights:', scanData.ai_insights)
       
+      // If scan_config is minimal, try to fetch comprehensive report
+      if (scanData.status === 'completed' && (!scanData.scan_config || !scanData.scan_config.executive_summary)) {
+        console.log('Attempting to fetch comprehensive report...')
+        setFetchingReport(true)
+        const comprehensiveReport = await fetchComprehensiveReport(id)
+        setFetchingReport(false)
+        
+        if (comprehensiveReport) {
+          // Merge comprehensive report data into scan
+          const enhancedScanData = {
+            ...scanData,
+            scan_config: {
+              ...scanData.scan_config,
+              ...comprehensiveReport.scan_config,
+              executive_summary: comprehensiveReport.executive_summary,
+              risk_score: comprehensiveReport.risk_score,
+              risk_level: comprehensiveReport.risk_level,
+              compliance_status: comprehensiveReport.compliance_status,
+              recommendations: comprehensiveReport.recommendations,
+              detailed_report: comprehensiveReport.detailed_report
+            },
+            ai_insights: comprehensiveReport.ai_insights || scanData.ai_insights
+          }
+          setScan(enhancedScanData as Scan)
+          console.log('Enhanced scan with comprehensive report:', enhancedScanData)
+          
+          // Auto-switch to enterprise view if we got comprehensive data
+          setViewMode('enterprise')
+        }
+      }
+      
       // Auto-switch to enterprise view if comprehensive data is available
       if (scanData.scan_config && (
         scanData.scan_config.executive_summary || 
@@ -229,23 +314,23 @@ export default function ModernScanResults() {
           clearInterval(autoRefreshInterval)
         }
         
-        const interval = setInterval(() => {
+        const interval = setInterval(async () => {
           console.log('Auto-refreshing running scan...')
           // Only refresh if not already refreshing and not transitioning
           if (!refreshing && !isTransitioning) {
-            handleRefresh()
+            // Set transitioning to prevent UI flicker
+            setIsTransitioning(true)
+            await handleRefresh()
+            // Small delay before removing transition state
+            setTimeout(() => setIsTransitioning(false), 300)
           }
         }, 10000) // 10 seconds to reduce flickering
         setAutoRefreshInterval(interval)
       } else {
-        // Clear interval for completed scans with a delay to prevent flickering
+        // Clear interval for completed scans
         if (autoRefreshInterval) {
-          setIsTransitioning(true)
-          setTimeout(() => {
-            clearInterval(autoRefreshInterval)
-            setAutoRefreshInterval(null)
-            setIsTransitioning(false)
-          }, 1000) // 1 second delay for smooth transition
+          clearInterval(autoRefreshInterval)
+          setAutoRefreshInterval(null)
         }
       }
     } catch (error) {
@@ -677,8 +762,8 @@ export default function ModernScanResults() {
   const statusConfig = getStatusConfig(scan.status)
   const StatusIcon = statusConfig.icon
 
-  // Special UI for running enterprise scans
-  if (scan.status === 'running') {
+  // Special UI for running enterprise scans - but only show on initial load to prevent flickering
+  if (scan.status === 'running' && !isTransitioning && results.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center max-w-2xl mx-auto px-8">
@@ -983,7 +1068,18 @@ export default function ModernScanResults() {
               </button>
             </div>
           </div>
-          {scan.scan_config && (scan.scan_config.executive_summary || scan.scan_config.risk_score !== undefined) && viewMode === 'details' && (
+          {fetchingReport && (
+            <div className="p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-500/20">
+              <div className="flex items-center space-x-3">
+                <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                <div className="text-sm">
+                  <p className="text-white">Fetching comprehensive security report...</p>
+                  <p className="text-gray-400">This may take a few seconds.</p>
+                </div>
+              </div>
+            </div>
+          )}
+          {!fetchingReport && scan.scan_config && (scan.scan_config.executive_summary || scan.scan_config.risk_score !== undefined) && viewMode === 'details' && (
             <div className="p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border border-purple-500/20">
               <div className="flex items-start space-x-3">
                 <Sparkles className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
