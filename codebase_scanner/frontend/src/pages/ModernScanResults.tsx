@@ -118,8 +118,7 @@ export default function ModernScanResults() {
         
         // Check if this is a permanent error (scan doesn't exist)
         const isNotFound = scanError?.message?.includes('not found') || 
-                          scanError?.code === 'PGRST116' || // Supabase not found error
-                          scanError?.status === 404
+                          scanError?.code === 'PGRST116' // Supabase not found error
         
         if (isNotFound) {
           console.log('Scan definitively not found, stopping retries')
