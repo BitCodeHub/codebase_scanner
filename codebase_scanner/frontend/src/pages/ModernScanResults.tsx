@@ -199,6 +199,7 @@ export default function ModernScanResults() {
 
       // Auto-refresh for running scans or recently created scans
       if (scanData.status === 'running') {
+        console.log('Scan is running, setting up auto-refresh...')
         const interval = setInterval(() => {
           console.log('Auto-refreshing running scan...')
           loadScanData()
@@ -387,6 +388,55 @@ export default function ModernScanResults() {
 
   const statusConfig = getStatusConfig(scan.status)
   const StatusIcon = statusConfig.icon
+
+  // Special UI for running enterprise scans
+  if (scan.status === 'running') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+        <div className="text-center max-w-2xl mx-auto px-8">
+          <div className="relative mb-8">
+            <div className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 animate-pulse mx-auto"></div>
+            <Shield className="w-16 h-16 text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          
+          <h2 className="text-3xl font-bold text-white mb-4">🔒 Enterprise Security Scan in Progress</h2>
+          
+          <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 mb-6">
+            <p className="text-gray-300 mb-4">Running comprehensive analysis with all 15 professional security tools:</p>
+            
+            <div className="grid grid-cols-3 gap-3 text-sm text-gray-400 mb-6">
+              <div>• Semgrep</div>
+              <div>• Bandit</div>
+              <div>• Gitleaks</div>
+              <div>• TruffleHog</div>
+              <div>• Safety</div>
+              <div>• Retire.js</div>
+              <div>• JADX</div>
+              <div>• APKLeaks</div>
+              <div>• QARK</div>
+              <div>• ESLint Security</div>
+              <div>• njsscan</div>
+              <div>• Checkov</div>
+              <div>• tfsec</div>
+              <div>• OWASP Check</div>
+              <div>• detect-secrets</div>
+            </div>
+            
+            <div className="flex items-center justify-center space-x-2">
+              <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+              <p className="text-gray-300">This comprehensive scan typically takes 3-5 minutes...</p>
+            </div>
+          </div>
+          
+          <div className="text-gray-400 text-sm">
+            <p>Scan ID: #{scan.id}</p>
+            <p>Started: {new Date(scan.created_at).toLocaleString()}</p>
+            <p className="mt-2">Page will auto-refresh when results are ready</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">

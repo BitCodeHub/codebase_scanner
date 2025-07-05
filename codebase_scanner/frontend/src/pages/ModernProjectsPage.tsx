@@ -209,13 +209,19 @@ export default function ModernProjectsPage() {
       // Navigate to scan results if we have a valid numeric ID
       if (scanResult.id && typeof scanResult.id === 'number') {
         console.log(`Navigating to scan results page: /scans/${scanResult.id}/results`)
-        showNotification('success', 'Scan completed! Redirecting to results...')
         
-        // Give the database more time to commit the transaction
+        // For async scans, show different message
+        if (scanResult.status === 'running') {
+          showNotification('success', '🔒 Enterprise scan started! Navigating to results page where you can monitor progress...')
+        } else {
+          showNotification('success', 'Scan completed! Redirecting to results...')
+        }
+        
+        // Navigate immediately for better UX
         setTimeout(() => {
-          console.log(`Actually navigating now to: /scans/${scanResult.id}/results`)
+          console.log(`Navigating to: /scans/${scanResult.id}/results`)
           navigate(`/scans/${scanResult.id}/results`)
-        }, 3000)  // Increased to 3 seconds
+        }, 1000)  // Reduced to 1 second
       } else if (scanResult.id) {
         // If we got a non-numeric ID (UUID), it means the scan wasn't saved properly
         console.error('Invalid scan ID format received:', scanResult.id)

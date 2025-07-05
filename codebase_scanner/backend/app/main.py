@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import os
+import json
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -713,6 +714,77 @@ def get_fix_recommendation(rule_id: str) -> str:
     # Default recommendation
     return "Review this security issue and apply appropriate fixes based on security best practices"
 
+def update_scan_with_results(scan_id: int, scan_result: dict, user_id: str, project_id: str):
+    """Update scan record with enterprise scan results"""
+    try:
+        from src.database import get_supabase_client
+        from datetime import datetime
+        
+        supabase = get_supabase_client()
+        
+        # Extract data from enterprise scan result
+        severity_dist = scan_result.get("statistics", {}).get("severity_distribution", {})
+        
+        # Update scan record
+        update_data = {
+            "status": "completed",
+            "completed_at": datetime.utcnow().isoformat(),
+            "total_issues": scan_result.get("total_findings", 0),
+            "critical_issues": severity_dist.get("critical", 0),
+            "high_issues": severity_dist.get("high", 0),
+            "medium_issues": severity_dist.get("medium", 0),
+            "low_issues": severity_dist.get("low", 0),
+            "scan_config": {
+                "scan_id": scan_result.get("scan_id", ""),
+                "tools_used": scan_result.get("metadata", {}).get("tools_used", []),
+                "repository_url": scan_result.get("repository_url", ""),
+                "scan_profile": "Enterprise Comprehensive",
+                "files_scanned": scan_result.get("statistics", {}).get("files_analyzed", 0),
+                "lines_scanned": scan_result.get("statistics", {}).get("lines_analyzed", 0),
+                "risk_score": scan_result.get("risk_score", 0),
+                "risk_level": scan_result.get("risk_level", ""),
+                "scan_duration": scan_result.get("scan_duration", ""),
+                "executive_summary": scan_result.get("executive_summary", "")[:1000],
+                "compliance_status": scan_result.get("compliance_status", {}),
+                "recommendations": scan_result.get("recommendations", {})
+            }
+        }
+        
+        supabase.table("scans").update(update_data).eq("id", scan_id).execute()
+        
+        # Store findings
+        findings = scan_result.get("findings", [])
+        if findings:
+            scan_results_data = []
+            for finding in findings[:500]:  # Limit to 500 findings
+                scan_results_data.append({
+                    "scan_id": scan_id,
+                    "rule_id": finding.get("rule_id", ""),
+                    "title": finding.get("title", ""),
+                    "description": finding.get("description", ""),
+                    "severity": finding.get("severity", "medium"),
+                    "category": finding.get("category", "Security"),
+                    "vulnerability_type": finding.get("vulnerability_type", ""),
+                    "file_path": finding.get("file_path", ""),
+                    "line_number": finding.get("line_number"),
+                    "code_snippet": finding.get("code_snippet", "")[:500] if finding.get("code_snippet") else None,
+                    "confidence": finding.get("confidence", "medium"),
+                    "owasp_category": finding.get("owasp_category", ""),
+                    "fix_recommendation": finding.get("fix_recommendation", ""),
+                    "cvss_score": finding.get("cvss_score"),
+                    "tool": finding.get("tool", ""),
+                    "compliance": json.dumps(finding.get("compliance", {})) if finding.get("compliance") else None
+                })
+            
+            if scan_results_data:
+                supabase.table("scan_results").insert(scan_results_data).execute()
+                print(f"✅ Stored {len(scan_results_data)} findings for scan {scan_id}")
+        
+        print(f"✅ Updated scan {scan_id} with enterprise results")
+        
+    except Exception as e:
+        print(f"❌ Error updating scan results: {e}")
+
 @app.post("/api/scans/comprehensive")
 async def scan_comprehensive(request: dict):
     """Run all 15 security tools for comprehensive analysis"""
@@ -735,7 +807,84 @@ async def scan_comprehensive(request: dict):
         print(f"Repository: {repository_url}")
         print(f"Running all 15 security tools...")
         
-        # Use ENTERPRISE scanner for professional-grade analysis
+        # Create initial scan record immediately
+        try:
+            from src.database import get_supabase_client
+            supabase = get_supabase_client()
+            
+            initial_scan_data = {
+                "user_id": user_id,
+                "project_id": int(project_id) if project_id and str(project_id).isdigit() else None,
+                "scan_type": "security",
+                "status": "running",
+                "triggered_by": "manual",
+                "branch": branch,
+                "total_issues": 0,
+                "critical_issues": 0,
+                "high_issues": 0,
+                "medium_issues": 0,
+                "low_issues": 0,
+                "created_at": datetime.utcnow().isoformat(),
+                "scan_config": {
+                    "repository_url": repository_url,
+                    "scan_profile": "Enterprise Comprehensive",
+                    "status_message": "Initializing enterprise security scan with 15 tools..."
+                }
+            }
+            
+            scan_response = supabase.table("scans").insert(initial_scan_data).execute()
+            
+            if scan_response.data and len(scan_response.data) > 0:
+                scan_id = scan_response.data[0]["id"]
+                print(f"✅ Created scan record with ID: {scan_id}")
+                
+                # Run scan asynchronously (in production, use background task)
+                # For now, we'll return immediately with scan ID
+                import asyncio
+                from concurrent.futures import ThreadPoolExecutor
+                
+                # Run the scan in a background thread
+                def run_enterprise_scan():
+                    try:
+                        # Use ENTERPRISE scanner for professional-grade analysis
+                        from app.enterprise_scanner import EnterpriseSecurityScanner
+                        scanner = EnterpriseSecurityScanner()
+                        result = scanner.scan_repository(repository_url, branch)
+                        
+                        # Update scan record with results
+                        if "error" not in result:
+                            update_scan_with_results(scan_id, result, user_id, project_id)
+                    except Exception as e:
+                        print(f"Background scan error: {e}")
+                        # Update scan status to failed
+                        try:
+                            supabase.table("scans").update({
+                                "status": "failed",
+                                "completed_at": datetime.utcnow().isoformat(),
+                                "scan_config": {"error": str(e)}
+                            }).eq("id", scan_id).execute()
+                        except:
+                            pass
+                
+                # Start background scan
+                executor = ThreadPoolExecutor(max_workers=1)
+                executor.submit(run_enterprise_scan)
+                
+                # Return immediately with scan ID
+                return {
+                    "id": scan_id,
+                    "status": "running",
+                    "message": "Enterprise security scan started. Check back in 3-5 minutes for results.",
+                    "scan_profile": "Enterprise Comprehensive (15 tools)"
+                }
+            else:
+                return {"error": "Failed to create scan record"}
+                
+        except Exception as db_error:
+            print(f"Database error: {db_error}")
+            return {"error": f"Database error: {str(db_error)}"}
+        
+        # Original synchronous code (fallback)
         from app.enterprise_scanner import EnterpriseSecurityScanner
         scanner = EnterpriseSecurityScanner()
         scan_result = scanner.scan_repository(repository_url, branch)
